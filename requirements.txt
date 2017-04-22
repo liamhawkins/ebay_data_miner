@@ -1,0 +1,10 @@
+appdirs==1.4.3
+numpy==1.12.1
+packaging==16.8
+pandas==0.19.2
+prompt-toolkit==1.0.14
+pyparsing==2.2.0
+python-dateutil==2.6.0
+pytz==2017.2
+six==1.10.0
+wcwidth==0.1.7
