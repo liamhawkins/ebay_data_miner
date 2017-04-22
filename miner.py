@@ -34,7 +34,6 @@ class EbayScraper:
         self.new_items = OrderedDict()
         self.manual_attributes = manual_attributes
         self.auto_scrape_attributes = auto_scrape_attributes
-        self.manual_attribute_df = pd.DataFrame(columns=self.manual_attributes.keys())
         self.auto_scrape_attribute_df = pd.DataFrame(columns=self.auto_scrape_attributes)
         self.full_attribute_df = pd.DataFrame()
 
@@ -116,7 +115,6 @@ class EbayScraper:
             for attrib, question in self.manual_attributes.items():
                 inp_list[attrib] = prompt('{} - {}: '.format(item_id, question))
             self.new_items[item_id].set_attributes(inp_list)
-            #self.manual_attribute_df.loc[len(self.manual_attribute_df.index) + 1] = inp_list
 
     def scrape_attributes(self, ebay_ids):
         '''
@@ -127,13 +125,6 @@ class EbayScraper:
             for attrib in self.auto_scrape_attributes:
                 scrape_list.append('fake data')
             self.auto_scrape_attribute_df.loc[len(self.auto_scrape_attribute_df.index) + 1] = scrape_list
-
-    def join_dfs(self):
-        '''
-        Joins auto_scrape_attribute_df and manual_attribute_df
-        '''
-        self.full_attribute_df = pd.concat([self.auto_scrape_attribute_df, self.manual_attribute_df], axis=1)
-        print(self.full_attribute_df)
 
 
 class EbayItem:
