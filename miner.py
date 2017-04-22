@@ -40,7 +40,6 @@ class DataInput:
     def __init__(self, attributes):
         self.attributes = attributes
         self.df = pd.DataFrame(columns=self.attributes.keys())
-        print(self.df)
 
     def print_attributes(self):
         for attrib, question in self.attributes.items():
@@ -49,15 +48,14 @@ class DataInput:
     def print_data(self):
         print(self.df)
 
-    def get_input(self, ebay_ids):
+    def get_manual_input(self, ebay_ids):
         for item in ebay_ids:
             inp_list = []
             for attrib, question in self.attributes.items():
                 inp_list.append(prompt('{} - {}: '.format(item, question)))
-            print(inp_list)
             self.df.loc[len(self.df.index) + 1] = inp_list
 
 if __name__ == '__main__':
     es = DataInput(ATTRIBUTES)
-    es.get_input([1,2])
+    es.get_manual_input([1,2])
     es.print_data()
