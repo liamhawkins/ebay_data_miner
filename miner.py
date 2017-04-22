@@ -64,7 +64,11 @@ class EbayScraper:
                 page = ''
             else:
                 page = '&_pgn=' + str(pg_num) + '&_skc=' + str((pg_num - 1) * 200)
-            url = 'http://www.ebay.ca/sch/i.html?_from=R40&_sacat=0&LH_Complete=1&_udlo=&_udhi=&LH_Auction=1&LH_BIN=1&_samilow=&_samihi=&_sadis=15&_stpos=k1r7t8&_sop=13&_dmd=1&_nkw=thinkpad+x220' + page + '&rt=nc'
+
+            url = 'http://www.ebay.ca/sch/i.html?_from=R40&_sacat=0' \
+                  '&LH_Complete=1&_udlo=&_udhi=&LH_Auction=1&LH_BIN=1' \
+                  '&_samilow=&_samihi=&_sadis=15&_stpos=k1r7t8&_sop=13' \
+                  '&_dmd=1&_nkw=thinkpad+x220' + page + '&rt=nc'
             self.search_result_page_urls.append(url)
 
     def get_new_items(self):
@@ -80,14 +84,14 @@ class EbayScraper:
                 item = element.find_all('a', class_='img imgWr2')
                 listing_url = item[0]['href']
                 # TODO: Add in check for ebayID already in DB
-                self.new_items[listing_id] = listing_url
+                self.new_items[listing_id] = EbayItem({'ebay_id':listing_id, 'item_url':listing_url})
 
     def print_items(self):
         '''
         Prints scraped ebay items
         '''
-        for key, value in self.new_items.items():
-            print('{} - {}'.format(key, value))
+        for ebay_id, item in self.new_items.items():
+            print('{} - {}'.format(ebay_id, item.item_url))
 
     def print_manual_attributes(self):
         '''
@@ -107,11 +111,12 @@ class EbayScraper:
         '''
         Prompts user for ebay item attributes that need manual input
         '''
-        for item in ebay_ids:
-            inp_list = []
+        for item_id in ebay_ids:
+            inp_list = dict()
             for attrib, question in self.manual_attributes.items():
-                inp_list.append(prompt('{} - {}: '.format(item, question)))
-            self.manual_attribute_df.loc[len(self.manual_attribute_df.index) + 1] = inp_list
+                inp_list[attrib] = prompt('{} - {}: '.format(item_id, question))
+            self.new_items[item_id].set_attributes(inp_list)
+            #self.manual_attribute_df.loc[len(self.manual_attribute_df.index) + 1] = inp_list
 
     def scrape_attributes(self, ebay_ids):
         '''
@@ -138,6 +143,9 @@ class EbayItem:
                 setattr(self, key, dictionary[key])
 
     def set_attributes(self, *attributes):
+        '''
+        Set attributes of instance after instantiation
+        '''
         for dictionary in attributes:
             for key in dictionary:
                 setattr(self, key, dictionary[key])
@@ -145,10 +153,13 @@ class EbayItem:
 
 if __name__ == '__main__':
     es = EbayScraper(MANUAL_ATTRIBUTES, AUTO_SCRAPE_ATTRIBUTES)
-    es.get_search_result_page_urls()
-    es.get_new_items()
-    es.print_items()
-    #es.get_manual_input([1, 2])
+    #es.get_search_result_page_urls()
+    #es.get_new_items()
+    #es.print_items()
+    es.new_items['1'] = EbayItem()
+    es.new_items['2'] = EbayItem()
+    es.get_manual_input(['1', '2'])
     #es.scrape_attributes([1, 2])
     #es.join_dfs()
-    #print(es.manual_attribute_df)
+    for ebay_id, item in es.new_items.items():
+        print('ID: {} - OS: {}'.format(ebay_id, item.os))
