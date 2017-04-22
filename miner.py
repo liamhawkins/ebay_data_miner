@@ -39,6 +39,9 @@ class EbayScraper:
         self.full_attribute_df = pd.DataFrame()
 
     def get_search_result_page_urls(self):
+	'''
+	Scrapes ebay search results and returns urls of first 3 pages
+	'''
         self.search_result_page_urls = []
         for pg_num in range(1, 4):
             if pg_num == 1:
@@ -49,6 +52,9 @@ class EbayScraper:
             self.search_result_page_urls.append(url)
 
     def get_ebay_items(self):
+	'''
+	After search result URLs are scraped, returns dictionary will all itemIDs and item URLs
+	'''
         for url in self.search_result_page_urls:
             r = urllib.request.urlopen(url).read()
             soup = BeautifulSoup(r, "html5lib")
@@ -60,18 +66,30 @@ class EbayScraper:
                 self.ebay_items[listing_id] = listing_url
 
     def print_ebay_items(self):
+	'''
+	Prints scraped ebay items
+	'''
         for key, value in self.ebay_items.items():
             print('{} - {}'.format(key, value))
 
     def print_manual_attributes(self):
+	'''
+	Prints ebay item attributes that need manual input
+	'''
         for attrib, question in self.manual_attributes.items():
             print('Attribute: {} - Question: {}:'.format(attrib, question))
 
     def print_auto_scrap_attributes(self):
+	'''
+	Prints ebay item attributes that are automatically scraped
+	'''
         for attrib in self.auto_scrape_attributes:
             print(attrib)
 
     def get_manual_input(self, ebay_ids):
+	'''
+	Prompts user for ebay item attributes that need manual input
+	'''
         for item in ebay_ids:
             inp_list = []
             for attrib, question in self.manual_attributes.items():
@@ -79,6 +97,9 @@ class EbayScraper:
             self.manual_attribute_df.loc[len(self.manual_attribute_df.index) + 1] = inp_list
 
     def scrape_attributes(self, ebay_ids):
+	'''
+	Scrapes ebay items for attributes that are manually scraped
+	'''
         for item in ebay_ids:
             scrape_list = []
             for attrib in self.auto_scrape_attributes:
@@ -86,6 +107,9 @@ class EbayScraper:
             self.auto_scrape_attribute_df.loc[len(self.auto_scrape_attribute_df.index) + 1] = scrape_list
 
     def join_dfs(self):
+	'''
+	Joins auto_scrape_attribute_df and manual_attribute_df
+	'''
         self.full_attribute_df = pd.concat([self.auto_scrape_attribute_df, self.manual_attribute_df], axis=1)
         print(self.full_attribute_df)
 
