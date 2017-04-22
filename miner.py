@@ -131,6 +131,28 @@ class EbayScraper:
         print(self.full_attribute_df)
 
 
+class EbayItem:
+    def __init__(self):
+        self.id = None
+        self.item_url = None
+        self.date_complete = None
+        self.sold = None
+        self.listing_type = None
+        self.country = None
+        self.top_rated = None
+        self.price = None
+        self.shipping = None
+        self.model = None
+        self.processor = None
+        self.ram_cap = None
+        self.pri_hd_cap = None
+        self.pri_hd_type = None
+        self.sec_hd_cap = None
+        self.sec_hd_type = None
+        self.os = None
+        self.battery = None
+        self.ac_charger = None
+
 if __name__ == '__main__':
     es = EbayScraper(MANUAL_ATTRIBUTES, AUTO_SCRAPE_ATTRIBUTES)
     es.get_search_result_page_urls()
