@@ -31,7 +31,7 @@ AUTO_SCRAPE_ATTRIBUTES = ['ebay_id', 'date_complete', 'sold',
 class EbayScraper:
 
     def __init__(self, manual_attributes, auto_scrape_attributes):
-        self.ebay_items = OrderedDict()
+        self.new_items = OrderedDict()
         self.manual_attributes = manual_attributes
         self.auto_scrape_attributes = auto_scrape_attributes
         self.manual_attribute_df = pd.DataFrame(columns=self.manual_attributes.keys())
@@ -59,7 +59,7 @@ class EbayScraper:
             url = 'http://www.ebay.ca/sch/i.html?_from=R40&_sacat=0&LH_Complete=1&_udlo=&_udhi=&LH_Auction=1&LH_BIN=1&_samilow=&_samihi=&_sadis=15&_stpos=k1r7t8&_sop=13&_dmd=1&_nkw=thinkpad+x220' + page + '&rt=nc'
             self.search_result_page_urls.append(url)
 
-    def get_ebay_items(self):
+    def get_new_items(self):
         '''
         After search result URLs are scraped, returns dictionary will all itemIDs and item URLs
         '''
@@ -72,13 +72,13 @@ class EbayScraper:
                 item = element.find_all('a', class_='img imgWr2')
                 listing_url = item[0]['href']
                 # TODO: Add in check for ebayID already in DB
-                self.ebay_items[listing_id] = listing_url
+                self.new_items[listing_id] = listing_url
 
-    def print_ebay_items(self):
+    def print_items(self):
         '''
         Prints scraped ebay items
         '''
-        for key, value in self.ebay_items.items():
+        for key, value in self.new_items.items():
             print('{} - {}'.format(key, value))
 
     def print_manual_attributes(self):
@@ -125,8 +125,8 @@ class EbayScraper:
 if __name__ == '__main__':
     es = EbayScraper(MANUAL_ATTRIBUTES, AUTO_SCRAPE_ATTRIBUTES)
     es.get_search_result_page_urls()
-    es.get_ebay_items()
-    es.print_ebay_items()
+    es.get_new_items()
+    es.print_items()
     #es.get_manual_input([1, 2])
     #es.scrape_attributes([1, 2])
     #es.join_dfs()
