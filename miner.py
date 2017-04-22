@@ -23,7 +23,7 @@ MANUAL_ATTRIBUTES['os'] = 'OS'
 MANUAL_ATTRIBUTES['battery'] = 'Battery Included'
 MANUAL_ATTRIBUTES['ac_charger'] = 'AC Charger Included'
 
-AUTO_SCRAPE_ATTRIBUTES = ['ebay_id', 'date_complete', 'sold',
+AUTO_SCRAPE_ATTRIBUTES = ['ebay_id', 'item_url', 'date_complete', 'sold',
                           'listing_type', 'country', 'top_rated',
                           'price', 'shipping']
 
@@ -44,6 +44,14 @@ class EbayScraper:
 
     def write_item_database(self):
         # TODO: write out item database csv
+        pass
+
+    def open_ebay_listing(self):
+        # TODO: open ebay listing page (selenium?)
+        pass
+
+    def close_ebay_listing(self):
+        # TODO: close ebay listing page (selenium?)
         pass
 
     def get_search_result_page_urls(self):
@@ -121,6 +129,7 @@ class EbayScraper:
         '''
         self.full_attribute_df = pd.concat([self.auto_scrape_attribute_df, self.manual_attribute_df], axis=1)
         print(self.full_attribute_df)
+
 
 if __name__ == '__main__':
     es = EbayScraper(MANUAL_ATTRIBUTES, AUTO_SCRAPE_ATTRIBUTES)
