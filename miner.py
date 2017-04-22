@@ -142,6 +142,13 @@ class EbayItem:
             for key in dictionary:
                 setattr(self, key, dictionary[key])
 
+    def __str__(self):
+        attribs = []
+        for attr, value in vars(self).items():
+            attribs.append('{} - {}'.format(attr, value))
+
+        return '\n'.join(attribs)
+
     def set_attributes(self, *attributes):
         '''
         Set attributes of instance after instantiation
@@ -162,4 +169,5 @@ if __name__ == '__main__':
     #es.scrape_attributes([1, 2])
     #es.join_dfs()
     for ebay_id, item in es.new_items.items():
-        print('ID: {} - OS: {}'.format(ebay_id, item.os))
+        print(ebay_id)
+        print(item)
