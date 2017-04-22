@@ -34,7 +34,6 @@ class EbayScraper:
         self.new_items = OrderedDict()
         self.manual_attributes = manual_attributes
         self.auto_scrape_attributes = auto_scrape_attributes
-        self.auto_scrape_attribute_df = pd.DataFrame(columns=self.auto_scrape_attributes)
         self.full_attribute_df = pd.DataFrame()
 
     def read_item_database(self):
@@ -111,20 +110,20 @@ class EbayScraper:
         Prompts user for ebay item attributes that need manual input
         '''
         for item_id in ebay_ids:
-            inp_list = dict()
+            inp_dict = dict()
             for attrib, question in self.manual_attributes.items():
-                inp_list[attrib] = prompt('{} - {}: '.format(item_id, question))
-            self.new_items[item_id].set_attributes(inp_list)
+                inp_dict[attrib] = prompt('{} - {}: '.format(item_id, question))
+            self.new_items[item_id].set_attributes(inp_dict)
 
     def scrape_attributes(self, ebay_ids):
         '''
         Scrapes ebay items for attributes that are manually scraped
         '''
-        for item in ebay_ids:
-            scrape_list = []
+        for item_id in ebay_ids:
+            scrape_dict = dict()
             for attrib in self.auto_scrape_attributes:
-                scrape_list.append('fake data')
-            self.auto_scrape_attribute_df.loc[len(self.auto_scrape_attribute_df.index) + 1] = scrape_list
+                scrape_dict[attrib] = 'fake data'
+            self.new_items[item_id].set_attributes(scrape_dict)
 
 
 class EbayItem:
@@ -157,8 +156,8 @@ if __name__ == '__main__':
     es.new_items['1'] = EbayItem()
     es.new_items['2'] = EbayItem()
     es.get_manual_input(['1', '2'])
-    #es.scrape_attributes([1, 2])
+    es.scrape_attributes(['1', '2'])
     #es.join_dfs()
     for ebay_id, item in es.new_items.items():
-        print(ebay_id)
+        print('\n' + ebay_id)
         print(item)
