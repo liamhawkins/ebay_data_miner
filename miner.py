@@ -58,7 +58,7 @@ class EbayScraper:
         Scrapes ebay search results and returns urls of first 3 pages
         '''
         self.search_result_page_urls = []
-        for pg_num in range(1, 4):
+        for pg_num in range(1, 4): # first 3 pages TODO: determine this num from search results
             if pg_num == 1:
                 page = ''
             else:
@@ -72,7 +72,7 @@ class EbayScraper:
 
     def get_new_items(self):
         '''
-        After search result URLs are scraped, returns dictionary will all itemIDs and item URLs
+        After search result URLs are scraped, creates dictionary will all itemIDs and item URLs
         '''
         for url in self.search_result_page_urls:
             r = urllib.request.urlopen(url).read()
@@ -87,7 +87,7 @@ class EbayScraper:
 
     def print_items(self):
         '''
-        Prints scraped ebay items
+        Prints ebay items with completed attributes
         '''
         for ebay_id, item in self.new_items.items():
             print('{} - {}'.format(ebay_id, item.item_url))
@@ -108,7 +108,7 @@ class EbayScraper:
 
     def scrape_item_attributes(self, item):
         '''
-        Scrapes ebay items for attributes that are scraped
+        Scrapes ebay listing for scrapable attributes
         '''
         scrape_dict = dict()
         for attrib in self.auto_scrape_attributes:
@@ -118,7 +118,7 @@ class EbayScraper:
 
     def get_item_attributes(self, id_item_pair):
         '''
-        Prompts user for ebay item attributes that need manual input
+        Prompts user for ebay listing attributes that need manual input
         '''
         inp_dict = dict()
         item_id = id_item_pair[0]
@@ -141,11 +141,11 @@ class EbayItem:
         for attr, value in vars(self).items():
             attribs.append('{} - {}'.format(attr, value))
 
-        return '\n'.join(attribs)
+        return '\nEbay item: ' + self.ebay_id + '\n' + '\n'.join(attribs)
 
     def set_attributes(self, *attributes):
         '''
-        Set attributes of instance after instantiation
+        Set/update attributes of instance after instantiation
         '''
         for dictionary in attributes:
             for key in dictionary:
@@ -156,9 +156,6 @@ if __name__ == '__main__':
     es = EbayScraper(MANUAL_ATTRIBUTES, AUTO_SCRAPE_ATTRIBUTES)
     es.get_search_result_page_urls()
     es.get_new_items()
-    #es.print_items()
-    #es.new_items['1'] = EbayItem()
-    #es.new_items['2'] = EbayItem()
     for id_item_pair in es.temp_items.items():
         try:
             es.get_item_attributes(id_item_pair)
