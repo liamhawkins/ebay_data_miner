@@ -105,21 +105,21 @@ class EbayScraper:
         for attrib in self.auto_scrape_attributes:
             print(attrib)
 
-    def get_manual_input(self, ebay_ids):
+    def get_manual_input(self):
         '''
         Prompts user for ebay item attributes that need manual input
         '''
-        for item_id in ebay_ids:
+        for item_id in list(self.new_items.keys()):
             inp_dict = dict()
             for attrib, question in self.manual_attributes.items():
                 inp_dict[attrib] = prompt('{} - {}: '.format(item_id, question))
             self.new_items[item_id].set_attributes(inp_dict)
 
-    def scrape_attributes(self, ebay_ids):
+    def scrape_item_attributes(self):
         '''
-        Scrapes ebay items for attributes that are manually scraped
+        Scrapes ebay items for attributes that are scraped
         '''
-        for item_id in ebay_ids:
+        for item_id in list(self.new_items.keys()):
             scrape_dict = dict()
             for attrib in self.auto_scrape_attributes:
                 scrape_dict[attrib] = 'fake data'
@@ -155,8 +155,8 @@ if __name__ == '__main__':
     #es.print_items()
     es.new_items['1'] = EbayItem()
     es.new_items['2'] = EbayItem()
-    es.get_manual_input(['1', '2'])
-    es.scrape_attributes(['1', '2'])
+    es.get_manual_input()
+    es.scrape_item_attributes()
     #es.join_dfs()
     for ebay_id, item in es.new_items.items():
         print('\n' + ebay_id)
