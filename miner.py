@@ -11,6 +11,8 @@ from collections import OrderedDict
 from prompt_toolkit import prompt
 
 
+DATABASE = 'item_database.csv'
+
 MANUAL_ATTRIBUTES = OrderedDict()
 MANUAL_ATTRIBUTES['model'] = 'Model'
 MANUAL_ATTRIBUTES['processor'] = 'Processor'
@@ -31,22 +33,26 @@ AUTO_SCRAPE_ATTRIBUTES = ['date_complete', 'sold',
 class EbayScraper:
 
     def __init__(self, manual_attributes, auto_scrape_attributes):
-        self.temp_items = OrderedDict()
+        self.unfilled_items = OrderedDict()
         self.new_items = OrderedDict()
         self.manual_attributes = manual_attributes
         self.auto_scrape_attributes = auto_scrape_attributes
         self.full_attribute_df = pd.DataFrame()
 
     def read_item_database(self):
-        # TODO: read in item database csv
-        pass
+        try:
+            self.database = pd.read_csv(DATABASE)
+        except FileNotFoundError:
+            print('Database not found, a new one will be created')
 
     def write_item_database(self):
         items = self.new_items.values()
         items_attribs = list()
         for item in items:
             items_attribs.append(vars(item))
-        print(pd.DataFrame(items_attribs))
+        item_df = pd.DataFrame(items_attribs)
+        with open(DATABASE, 'a') as f:
+            item_df.to_csv(f, header=False)
 
     def open_ebay_listing(self):
         # TODO: open ebay listing page (selenium?)
@@ -86,7 +92,7 @@ class EbayScraper:
                 item = element.find_all('a', class_='img imgWr2')
                 listing_url = item[0]['href']
                 # TODO: Add in check for ebayID already in DB
-                self.temp_items[listing_id] = EbayItem({'ebay_id':listing_id, 'item_url':listing_url})
+                self.unfilled_items[listing_id] = EbayItem({'ebay_id':listing_id, 'item_url':listing_url})
 
     def print_items(self):
         '''
@@ -156,9 +162,10 @@ class EbayItem:
 
 if __name__ == '__main__':
     es = EbayScraper(MANUAL_ATTRIBUTES, AUTO_SCRAPE_ATTRIBUTES)
+    es.read_item_database()
     es.get_search_result_page_urls()
     es.get_new_items()
-    for id_item_pair in es.temp_items.items():
+    for id_item_pair in es.unfilled_items.items():
         try:
             es.get_item_attributes(id_item_pair)
         except KeyboardInterrupt:
