@@ -23,7 +23,7 @@ MANUAL_ATTRIBUTES['os'] = 'OS'
 MANUAL_ATTRIBUTES['battery'] = 'Battery Included'
 MANUAL_ATTRIBUTES['ac_charger'] = 'AC Charger Included'
 
-AUTO_SCRAPE_ATTRIBUTES = ['ebay_id', 'item_url', 'date_complete', 'sold',
+AUTO_SCRAPE_ATTRIBUTES = ['date_complete', 'sold',
                           'listing_type', 'country', 'top_rated',
                           'price', 'shipping']
 
@@ -31,6 +31,7 @@ AUTO_SCRAPE_ATTRIBUTES = ['ebay_id', 'item_url', 'date_complete', 'sold',
 class EbayScraper:
 
     def __init__(self, manual_attributes, auto_scrape_attributes):
+        self.temp_items = OrderedDict()
         self.new_items = OrderedDict()
         self.manual_attributes = manual_attributes
         self.auto_scrape_attributes = auto_scrape_attributes
@@ -82,7 +83,7 @@ class EbayScraper:
                 item = element.find_all('a', class_='img imgWr2')
                 listing_url = item[0]['href']
                 # TODO: Add in check for ebayID already in DB
-                self.new_items[listing_id] = EbayItem({'ebay_id':listing_id, 'item_url':listing_url})
+                self.temp_items[listing_id] = EbayItem({'ebay_id':listing_id, 'item_url':listing_url})
 
     def print_items(self):
         '''
@@ -105,25 +106,28 @@ class EbayScraper:
         for attrib in self.auto_scrape_attributes:
             print(attrib)
 
-    def get_manual_input(self):
-        '''
-        Prompts user for ebay item attributes that need manual input
-        '''
-        for item_id in list(self.new_items.keys()):
-            inp_dict = dict()
-            for attrib, question in self.manual_attributes.items():
-                inp_dict[attrib] = prompt('{} - {}: '.format(item_id, question))
-            self.new_items[item_id].set_attributes(inp_dict)
-
-    def scrape_item_attributes(self):
+    def scrape_item_attributes(self, item):
         '''
         Scrapes ebay items for attributes that are scraped
         '''
-        for item_id in list(self.new_items.keys()):
-            scrape_dict = dict()
-            for attrib in self.auto_scrape_attributes:
-                scrape_dict[attrib] = 'fake data'
-            self.new_items[item_id].set_attributes(scrape_dict)
+        scrape_dict = dict()
+        for attrib in self.auto_scrape_attributes:
+            scrape_dict[attrib] = 'fake data'
+        item.set_attributes(scrape_dict)
+        return item
+
+    def get_item_attributes(self, id_item_pair):
+        '''
+        Prompts user for ebay item attributes that need manual input
+        '''
+        inp_dict = dict()
+        item_id = id_item_pair[0]
+        item = id_item_pair[1]
+        for attrib, question in self.manual_attributes.items():
+            inp_dict[attrib] = prompt('{} - {}: '.format(item_id, question))
+        item.set_attributes(inp_dict)
+        item = self.scrape_item_attributes(item)
+        self.new_items[item_id] = item
 
 
 class EbayItem:
@@ -150,14 +154,15 @@ class EbayItem:
 
 if __name__ == '__main__':
     es = EbayScraper(MANUAL_ATTRIBUTES, AUTO_SCRAPE_ATTRIBUTES)
-    #es.get_search_result_page_urls()
-    #es.get_new_items()
+    es.get_search_result_page_urls()
+    es.get_new_items()
     #es.print_items()
-    es.new_items['1'] = EbayItem()
-    es.new_items['2'] = EbayItem()
-    es.get_manual_input()
-    es.scrape_item_attributes()
-    #es.join_dfs()
-    for ebay_id, item in es.new_items.items():
-        print('\n' + ebay_id)
+    #es.new_items['1'] = EbayItem()
+    #es.new_items['2'] = EbayItem()
+    for id_item_pair in es.temp_items.items():
+        try:
+            es.get_item_attributes(id_item_pair)
+        except KeyboardInterrupt:
+            break
+    for item in es.new_items.values():
         print(item)
