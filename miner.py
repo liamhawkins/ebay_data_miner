@@ -6,6 +6,7 @@ TODO:
 '''
 import urllib.request
 import pandas as pd
+import os
 from bs4 import BeautifulSoup
 from collections import OrderedDict
 from prompt_toolkit import prompt
@@ -25,18 +26,17 @@ MANUAL_ATTRIBUTES['os'] = 'OS'
 MANUAL_ATTRIBUTES['battery'] = 'Battery Included'
 MANUAL_ATTRIBUTES['ac_charger'] = 'AC Charger Included'
 
-AUTO_SCRAPE_ATTRIBUTES = ['date_complete', 'sold',
-                          'listing_type', 'country', 'top_rated',
-                          'price', 'shipping']
-
 
 class EbayScraper:
 
-    def __init__(self, manual_attributes, auto_scrape_attributes):
+    def __init__(self, manual_attributes):
         self.unfilled_items = OrderedDict()
         self.new_items = OrderedDict()
         self.manual_attributes = manual_attributes
-        self.auto_scrape_attributes = auto_scrape_attributes
+        self.auto_scrape_attributes = ['date_complete', 'sold',
+                                       'listing_type', 'country',
+                                       'top_rated', 'price',
+                                       'shipping']
         self.full_attribute_df = pd.DataFrame()
 
     def read_item_database(self):
@@ -51,8 +51,11 @@ class EbayScraper:
         for item in items:
             items_attribs.append(vars(item))
         item_df = pd.DataFrame(items_attribs)
-        with open(DATABASE, 'a') as f:
-            item_df.to_csv(f, header=False)
+        if os.path.isfile(DATABASE):
+            with open(DATABASE, 'a') as f:
+                item_df.to_csv(f, header=False)
+        else:
+            item_df.to_csv(DATABASE)
 
     def open_ebay_listing(self):
         # TODO: open ebay listing page (selenium?)
@@ -161,7 +164,7 @@ class EbayItem:
 
 
 if __name__ == '__main__':
-    es = EbayScraper(MANUAL_ATTRIBUTES, AUTO_SCRAPE_ATTRIBUTES)
+    es = EbayScraper(MANUAL_ATTRIBUTES)
     es.read_item_database()
     es.get_search_result_page_urls()
     es.get_new_items()
