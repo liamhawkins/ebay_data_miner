@@ -1,4 +1,5 @@
 *.pyc
 *.swp
 *ipynb*
+item_database.csv
 prompt_examples/
