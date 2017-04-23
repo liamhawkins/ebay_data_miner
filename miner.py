@@ -42,8 +42,11 @@ class EbayScraper:
         pass
 
     def write_item_database(self):
-        # TODO: write out item database csv
-        pass
+        items = self.new_items.values()
+        items_attribs = list()
+        for item in items:
+            items_attribs.append(vars(item))
+        print(pd.DataFrame(items_attribs))
 
     def open_ebay_listing(self):
         # TODO: open ebay listing page (selenium?)
@@ -89,8 +92,8 @@ class EbayScraper:
         '''
         Prints ebay items with completed attributes
         '''
-        for ebay_id, item in self.new_items.items():
-            print('{} - {}'.format(ebay_id, item.item_url))
+        for item in self.new_items.values():
+            print(item)
 
     def print_manual_attributes(self):
         '''
@@ -140,7 +143,6 @@ class EbayItem:
         attribs = []
         for attr, value in vars(self).items():
             attribs.append('{} - {}'.format(attr, value))
-
         return '\nEbay item: ' + self.ebay_id + '\n' + '\n'.join(attribs)
 
     def set_attributes(self, *attributes):
@@ -161,5 +163,5 @@ if __name__ == '__main__':
             es.get_item_attributes(id_item_pair)
         except KeyboardInterrupt:
             break
-    for item in es.new_items.values():
-        print(item)
+
+    es.write_item_database()
