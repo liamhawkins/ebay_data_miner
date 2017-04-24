@@ -1,5 +1,6 @@
 '''
 TODO:
+    Add/Check for Errors
 '''
 import urllib.request
 import pandas as pd
@@ -39,8 +40,8 @@ class EbayScraper:
     def read_item_database(self):
         try:
             self.database = pd.read_csv(DATABASE)
-            self.database_ids = self.database['ebay_id'].tolist()
-            self.database_ids = [str(i) for i in self.database_ids]
+            self.database_ids = [str(i) for i in self.database['ebay_id'].tolist()]
+            # self.database_ids = [str(i) for i in self.database_ids]
         except FileNotFoundError:
             print('Database not found, a new one will be created')
 
