@@ -1,8 +1,5 @@
 '''
 TODO:
-    Find better way of gathering scraping data, then manual data, then joining to full DB
-    Index dataframe by ebay_id(?)
-    ebay item class(?)
 '''
 import urllib.request
 import pandas as pd
@@ -128,6 +125,7 @@ class EbayScraper:
         '''
         Scrapes ebay listing for scrapable attributes
         '''
+        # TODO: Move into EbayItem class
         scrape_dict = dict()
         for attrib in self.auto_scrape_attributes:
             scrape_dict[attrib] = 'fake data'
@@ -138,6 +136,7 @@ class EbayScraper:
         '''
         Prompts user for ebay listing attributes that need manual input
         '''
+        # TODO: Move into EbayItem class
         inp_dict = dict()
         item_id = id_item_pair[0]
         item = id_item_pair[1]
@@ -169,7 +168,11 @@ class EbayItem:
                 setattr(self, key, dictionary[key])
 
     def scrape_attributes():
-        # TODO: Figure out whether to implement this here or in EbayScraper
+        # TODO: move from EbayScraper class
+        pass
+
+    def prompt_item_attributes():
+        # TODO: move from EbayScraper class
         pass
 
 
