@@ -32,10 +32,11 @@ AUTO_SCRAPE_ATTRIBUTES = ['date_complete', 'sold',
 
 class EbayScraper:
 
-    def __init__(self, manual_attributes):  # TODO: Pass in both sets of attributes, then pass to items when needed
+    def __init__(self, manual_attributes, auto_scrape_attributes):  # TODO: Pass in both sets of attributes, then pass to items when needed
         self.unfilled_items = []
         self.new_items = []
         self.manual_attributes = manual_attributes
+        self.auto_scrape_attributes = auto_scrape_attributes
         self.full_attribute_df = pd.DataFrame()
 
     def read_item_database(self):
@@ -123,7 +124,7 @@ class EbayScraper:
     def process_items(self):
         for item in self.unfilled_items:
             try:
-                item.prompt_item_attributes()
+                item.prompt_item_attributes(self.manual_attributes, self.auto_scrape_attributes)
                 self.new_items.append(item)
             except KeyboardInterrupt:
                 break
@@ -149,23 +150,23 @@ class EbayItem:
             for key in dictionary:
                 setattr(self, key, dictionary[key])
 
-    def scrape_attributes(self):
+    def scrape_attributes(self, auto_scrape_attributes):
         # TODO: Implement scrapers
         scrape_dict = dict()
-        for attrib in AUTO_SCRAPE_ATTRIBUTES:
+        for attrib in auto_scrape_attributes:
             scrape_dict[attrib] = 'fake data'
         self.set_attributes(scrape_dict)
 
-    def prompt_item_attributes(self):
+    def prompt_item_attributes(self, manual_attributes, auto_scrape_attributes):
         inp_dict = dict()
-        for attrib, question in MANUAL_ATTRIBUTES.items():
+        for attrib, question in manual_attributes.items():
             inp_dict[attrib] = prompt('{} - {}: '.format(self.ebay_id, question))
         self.set_attributes(inp_dict)
-        self.scrape_attributes()
+        self.scrape_attributes(auto_scrape_attributes)
 
 
 if __name__ == '__main__':
-    es = EbayScraper(MANUAL_ATTRIBUTES)
+    es = EbayScraper(MANUAL_ATTRIBUTES, AUTO_SCRAPE_ATTRIBUTES)
     es.read_item_database()
     es.get_search_results()
     es.get_new_items()
