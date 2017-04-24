@@ -32,7 +32,7 @@ AUTO_SCRAPE_ATTRIBUTES = ['date_complete', 'sold',
 
 class EbayScraper:
 
-    def __init__(self, manual_attributes, auto_scrape_attributes):  # TODO: Pass in both sets of attributes, then pass to items when needed
+    def __init__(self, manual_attributes, auto_scrape_attributes):
         self.unfilled_items = []
         self.new_items = []
         self.manual_attributes = manual_attributes
@@ -152,6 +152,7 @@ class EbayItem:
 
     def scrape_attributes(self, auto_scrape_attributes):
         # TODO: Implement scrapers
+        # TODO: Remove usage of auto_scrape_attributes after implementing scrapers
         scrape_dict = dict()
         for attrib in auto_scrape_attributes:
             scrape_dict[attrib] = 'fake data'
