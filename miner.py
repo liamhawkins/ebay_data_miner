@@ -8,6 +8,7 @@ import os
 from bs4 import BeautifulSoup
 from collections import OrderedDict
 from prompt_toolkit import prompt
+from datetime import datetime
 
 
 DATABASE = 'item_database.csv'
@@ -24,7 +25,7 @@ MANUAL_ATTRIBUTES['os'] = 'OS'
 MANUAL_ATTRIBUTES['battery'] = 'Battery Included'
 MANUAL_ATTRIBUTES['ac_charger'] = 'AC Charger Included'
 
-AUTO_SCRAPE_ATTRIBUTES = ['date_complete', 'sold',
+AUTO_SCRAPE_ATTRIBUTES = ['sold',
                           'listing_type', 'country',
                           'top_rated', 'price',
                           'shipping']
@@ -150,9 +151,17 @@ class EbayItem:
             for key in dictionary:
                 setattr(self, key, dictionary[key])
 
+    def get_date_completed(self, soup):
+        span = soup.find('span', {'class': 'timeMs'})
+        ms = span.attrs['timems']
+        self.date_completed = datetime.fromtimestamp(int(ms)/1000)
+
     def scrape_attributes(self, auto_scrape_attributes):
         # TODO: Implement scrapers
         # TODO: Remove usage of auto_scrape_attributes after implementing scrapers
+        r = urllib.request.urlopen(self.item_url).read()
+        soup = BeautifulSoup(r, 'html5lib')
+        self.get_date_completed(soup)
         scrape_dict = dict()
         for attrib in auto_scrape_attributes:
             scrape_dict[attrib] = 'fake data'
