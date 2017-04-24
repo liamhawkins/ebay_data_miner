@@ -1,6 +1,7 @@
 '''
 TODO:
     Add/Check for Errors
+    Change item referencing from item lists to EbayItem.ebay_id instead of dictionary key
 '''
 import urllib.request
 import pandas as pd
@@ -32,7 +33,7 @@ AUTO_SCRAPE_ATTRIBUTES = ['date_complete', 'sold',
 
 class EbayScraper:
 
-    def __init__(self, manual_attributes):
+    def __init__(self, manual_attributes):  # TODO: Pass in both sets of attributes, then pass to items when needed
         self.unfilled_items = OrderedDict()
         self.new_items = OrderedDict()
         self.manual_attributes = manual_attributes
@@ -121,19 +122,15 @@ class EbayScraper:
         for attrib in self.auto_scrape_attributes:
             print(attrib)
 
-    def get_item_attributes(self, id_item_pair):
-        '''
-        Prompts user for ebay listing attributes that need manual input
-        '''
-        # TODO: Move into EbayItem class
-        inp_dict = dict()
-        item_id = id_item_pair[0]
-        item = id_item_pair[1]
-        for attrib, question in self.manual_attributes.items():
-            inp_dict[attrib] = prompt('{} - {}: '.format(item_id, question))
-        item.set_attributes(inp_dict)
-        item.scrape_attributes()
-        self.new_items[item_id] = item
+    def process_items(self):
+        for item_id_pair in self.unfilled_items.items():
+            try:
+                item_id = item_id_pair[0]
+                item = item_id_pair[1]
+                item.prompt_item_attributes()
+                self.new_items[item_id] = item
+            except KeyboardInterrupt:
+                break
 
 
 class EbayItem:
@@ -164,8 +161,11 @@ class EbayItem:
         self.set_attributes(scrape_dict)
 
     def prompt_item_attributes(self):
-        # TODO: move from EbayScraper class
-        pass
+        inp_dict = dict()
+        for attrib, question in MANUAL_ATTRIBUTES.items():
+            inp_dict[attrib] = prompt('{} - {}: '.format(self.ebay_id, question))
+        self.set_attributes(inp_dict)
+        self.scrape_attributes()
 
 
 if __name__ == '__main__':
@@ -173,10 +173,5 @@ if __name__ == '__main__':
     es.read_item_database()
     es.get_search_result_page_urls()
     es.get_new_items()
-    for id_item_pair in es.unfilled_items.items():
-        try:
-            es.get_item_attributes(id_item_pair)
-        except KeyboardInterrupt:
-            break
-
+    es.process_items()
     es.write_item_database()
