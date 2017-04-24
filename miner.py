@@ -25,8 +25,7 @@ MANUAL_ATTRIBUTES['os'] = 'OS'
 MANUAL_ATTRIBUTES['battery'] = 'Battery Included'
 MANUAL_ATTRIBUTES['ac_charger'] = 'AC Charger Included'
 
-AUTO_SCRAPE_ATTRIBUTES = ['sold',
-                          'listing_type', 'country',
+AUTO_SCRAPE_ATTRIBUTES = ['listing_type', 'country',
                           'top_rated', 'price',
                           'shipping']
 
@@ -156,12 +155,24 @@ class EbayItem:
         ms = span.attrs['timems']
         self.date_completed = datetime.fromtimestamp(int(ms)/1000)
 
+    def get_sold_status(self, soup):
+        div = soup.find('div', {'class': 'vi-bbox-dspn u-flL lable binLable'})
+        sold_ind = str(div.contents[0])
+        if sold_ind == 'Sold for:':
+            self.sold = 'yes'
+        elif sold_ind == 'Price:':
+            self.sold = 'no'
+        else:
+            print('SCRAPING ERROR! CANNOT FIND SOLD STATUS')
+            self.sold = 'SCRAPING ERROR'
+
     def scrape_attributes(self, auto_scrape_attributes):
         # TODO: Implement scrapers
         # TODO: Remove usage of auto_scrape_attributes after implementing scrapers
         r = urllib.request.urlopen(self.item_url).read()
         soup = BeautifulSoup(r, 'html5lib')
         self.get_date_completed(soup)
+        self.get_sold_status(soup)
         scrape_dict = dict()
         for attrib in auto_scrape_attributes:
             scrape_dict[attrib] = 'fake data'
