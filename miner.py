@@ -1,7 +1,6 @@
 '''
 TODO:
     Add/Check for Errors
-    Change item referencing from item lists to EbayItem.ebay_id instead of dictionary key
 '''
 import urllib.request
 import pandas as pd
@@ -65,7 +64,7 @@ class EbayScraper:
         # TODO: close ebay listing page (selenium?)
         pass
 
-    def get_search_result_page_urls(self):
+    def get_search_results(self):
         '''
         Scrapes ebay search results and returns urls of first 3 pages
         '''
@@ -168,7 +167,7 @@ class EbayItem:
 if __name__ == '__main__':
     es = EbayScraper(MANUAL_ATTRIBUTES)
     es.read_item_database()
-    es.get_search_result_page_urls()
+    es.get_search_results()
     es.get_new_items()
     es.process_items()
     es.write_item_database()
