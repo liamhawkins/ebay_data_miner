@@ -41,7 +41,6 @@ class EbayScraper:
         try:
             self.database = pd.read_csv(DATABASE)
             self.database_ids = [str(i) for i in self.database['ebay_id'].tolist()]
-            # self.database_ids = [str(i) for i in self.database_ids]
         except FileNotFoundError:
             print('Database not found, a new one will be created')
 
@@ -70,7 +69,7 @@ class EbayScraper:
         Scrapes ebay search results and returns urls of first 3 pages
         '''
         self.search_result_page_urls = []
-        for pg_num in range(1, 4): # first 3 pages TODO: determine this num from search results
+        for pg_num in range(1, 4):  # first 3 pages TODO: determine this num from search results
             if pg_num == 1:
                 page = ''
             else:
@@ -94,12 +93,11 @@ class EbayScraper:
                 listing_id = element['listingid']
                 item = element.find_all('a', class_='img imgWr2')
                 listing_url = item[0]['href']
-                if hasattr(self, 'database') :
+                if hasattr(self, 'database'):
                     if not (listing_id in self.database_ids):
-                        self.unfilled_items[listing_id] = EbayItem({'ebay_id':listing_id, 'item_url':listing_url})
+                        self.unfilled_items[listing_id] = EbayItem({'ebay_id': listing_id, 'item_url': listing_url})
                 else:
-                    self.unfilled_items[listing_id] = EbayItem({'ebay_id':listing_id, 'item_url':listing_url})
-
+                    self.unfilled_items[listing_id] = EbayItem({'ebay_id': listing_id, 'item_url': listing_url})
 
     def print_items(self):
         '''
