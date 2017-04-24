@@ -42,6 +42,8 @@ class EbayScraper:
     def read_item_database(self):
         try:
             self.database = pd.read_csv(DATABASE)
+            self.database_ids = self.database['ebay_id'].tolist()
+            self.database_ids = [str(i) for i in self.database_ids]
         except FileNotFoundError:
             print('Database not found, a new one will be created')
 
@@ -94,8 +96,12 @@ class EbayScraper:
                 listing_id = element['listingid']
                 item = element.find_all('a', class_='img imgWr2')
                 listing_url = item[0]['href']
-                # TODO: Add in check for ebayID already in DB
-                self.unfilled_items[listing_id] = EbayItem({'ebay_id':listing_id, 'item_url':listing_url})
+                if hasattr(self, 'database') :
+                    if not (listing_id in self.database_ids):
+                        self.unfilled_items[listing_id] = EbayItem({'ebay_id':listing_id, 'item_url':listing_url})
+                else:
+                    self.unfilled_items[listing_id] = EbayItem({'ebay_id':listing_id, 'item_url':listing_url})
+
 
     def print_items(self):
         '''
@@ -161,6 +167,10 @@ class EbayItem:
         for dictionary in attributes:
             for key in dictionary:
                 setattr(self, key, dictionary[key])
+
+    def scrape_attributes():
+        # TODO: Figure out whether to implement this here or in EbayScraper
+        pass
 
 
 if __name__ == '__main__':
