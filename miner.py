@@ -34,8 +34,8 @@ AUTO_SCRAPE_ATTRIBUTES = ['date_complete', 'sold',
 class EbayScraper:
 
     def __init__(self, manual_attributes):  # TODO: Pass in both sets of attributes, then pass to items when needed
-        self.unfilled_items = OrderedDict()
-        self.new_items = OrderedDict()
+        self.unfilled_items = []
+        self.new_items = []
         self.manual_attributes = manual_attributes
         self.full_attribute_df = pd.DataFrame()
 
@@ -47,9 +47,8 @@ class EbayScraper:
             print('Database not found, a new one will be created')
 
     def write_item_database(self):
-        items = self.new_items.values()
         items_attribs = list()
-        for item in items:
+        for item in self.new_items:
             items_attribs.append(vars(item))
         item_df = pd.DataFrame(items_attribs)
         if os.path.isfile(DATABASE):
@@ -97,15 +96,15 @@ class EbayScraper:
                 listing_url = item[0]['href']
                 if hasattr(self, 'database'):
                     if not (listing_id in self.database_ids):
-                        self.unfilled_items[listing_id] = EbayItem({'ebay_id': listing_id, 'item_url': listing_url})
+                        self.unfilled_items.append(EbayItem({'ebay_id': listing_id, 'item_url': listing_url}))
                 else:
-                    self.unfilled_items[listing_id] = EbayItem({'ebay_id': listing_id, 'item_url': listing_url})
+                    self.unfilled_items.append(EbayItem({'ebay_id': listing_id, 'item_url': listing_url}))
 
     def print_items(self):
         '''
         Prints ebay items with completed attributes
         '''
-        for item in self.new_items.values():
+        for item in self.new_items:
             print(item)
 
     def print_manual_attributes(self):
@@ -123,12 +122,10 @@ class EbayScraper:
             print(attrib)
 
     def process_items(self):
-        for item_id_pair in self.unfilled_items.items():
+        for item in self.unfilled_items:
             try:
-                item_id = item_id_pair[0]
-                item = item_id_pair[1]
                 item.prompt_item_attributes()
-                self.new_items[item_id] = item
+                self.new_items.append(item)
             except KeyboardInterrupt:
                 break
 
