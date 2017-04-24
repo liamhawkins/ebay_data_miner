@@ -24,6 +24,11 @@ MANUAL_ATTRIBUTES['os'] = 'OS'
 MANUAL_ATTRIBUTES['battery'] = 'Battery Included'
 MANUAL_ATTRIBUTES['ac_charger'] = 'AC Charger Included'
 
+AUTO_SCRAPE_ATTRIBUTES = ['date_complete', 'sold',
+                          'listing_type', 'country',
+                          'top_rated', 'price',
+                          'shipping']
+
 
 class EbayScraper:
 
@@ -31,10 +36,6 @@ class EbayScraper:
         self.unfilled_items = OrderedDict()
         self.new_items = OrderedDict()
         self.manual_attributes = manual_attributes
-        self.auto_scrape_attributes = ['date_complete', 'sold',
-                                       'listing_type', 'country',
-                                       'top_rated', 'price',
-                                       'shipping']
         self.full_attribute_df = pd.DataFrame()
 
     def read_item_database(self):
@@ -120,17 +121,6 @@ class EbayScraper:
         for attrib in self.auto_scrape_attributes:
             print(attrib)
 
-    def scrape_item_attributes(self, item):
-        '''
-        Scrapes ebay listing for scrapable attributes
-        '''
-        # TODO: Move into EbayItem class
-        scrape_dict = dict()
-        for attrib in self.auto_scrape_attributes:
-            scrape_dict[attrib] = 'fake data'
-        item.set_attributes(scrape_dict)
-        return item
-
     def get_item_attributes(self, id_item_pair):
         '''
         Prompts user for ebay listing attributes that need manual input
@@ -142,7 +132,7 @@ class EbayScraper:
         for attrib, question in self.manual_attributes.items():
             inp_dict[attrib] = prompt('{} - {}: '.format(item_id, question))
         item.set_attributes(inp_dict)
-        item = self.scrape_item_attributes(item)
+        item.scrape_attributes()
         self.new_items[item_id] = item
 
 
@@ -166,11 +156,14 @@ class EbayItem:
             for key in dictionary:
                 setattr(self, key, dictionary[key])
 
-    def scrape_attributes():
-        # TODO: move from EbayScraper class
-        pass
+    def scrape_attributes(self):
+        # TODO: Implement scrapers
+        scrape_dict = dict()
+        for attrib in AUTO_SCRAPE_ATTRIBUTES:
+            scrape_dict[attrib] = 'fake data'
+        self.set_attributes(scrape_dict)
 
-    def prompt_item_attributes():
+    def prompt_item_attributes(self):
         # TODO: move from EbayScraper class
         pass
 
