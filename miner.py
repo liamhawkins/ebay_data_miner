@@ -1,6 +1,7 @@
 '''
 TODO:
     Add/Check for Errors
+    Implement proper error handling
 '''
 import urllib.request
 import pandas as pd
@@ -185,7 +186,7 @@ class EbayItem:
         # TODO: Implement scrapers
         # TODO: Remove usage of auto_scrape_attributes after implementing scrapers
         r = urllib.request.urlopen(self.item_url).read()
-        soup = BeautifulSoup(r, 'html5lib')
+        soup = BeautifulSoup(r, 'html.parser')
         main_content = soup.find('div', id='mainContent')
         self.get_date_completed(main_content)
         self.get_sold_type_and_status(main_content)
