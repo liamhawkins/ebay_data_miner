@@ -2,6 +2,7 @@
 TODO:
     Add/Check for Errors
     Implement proper error handling
+    Cleanup requirements.txt
 '''
 import pandas as pd
 import os
@@ -40,8 +41,8 @@ class EbayScraper:
 
     def read_item_database(self):
         try:
-            self.database = pd.read_csv(DATABASE)
-            self.database_ids = [str(i) for i in self.database['ebay_id'].tolist()]
+            self.db = pd.read_csv(DATABASE)
+            self.db_ids = [str(i) for i in self.db['ebay_id'].tolist()]
         except FileNotFoundError:
             print('Database not found, a new one will be created')
 
@@ -61,11 +62,12 @@ class EbayScraper:
         Scrapes ebay search results and returns urls of first 3 pages
         '''
         self.search_result_page_urls = []
-        for pg_num in range(1, 4):  # first 3 pages TODO: determine this num from search results
+        for pg_num in range(1, 4):  # TODO: determine this num with logic
             if pg_num == 1:
                 page = ''
             else:
-                page = '&_pgn=' + str(pg_num) + '&_skc=' + str((pg_num - 1) * 200)
+                page = '&_pgn=' + str(pg_num) + \
+                       '&_skc=' + str((pg_num - 1) * 200)
 
             url = 'http://www.ebay.ca/sch/i.html?_from=R40&_sacat=0' \
                   '&LH_Complete=1&_udlo=&_udhi=&LH_Auction=1&LH_BIN=1' \
@@ -75,18 +77,20 @@ class EbayScraper:
 
     def get_new_items(self):
         '''
-        After search result URLs are scraped, creates dictionary will all itemIDs and item URLs
+        After search result URLs are scraped,
+        creates dictionary will all itemIDs and item URLs
         '''
         for url in self.search_result_page_urls:
             r = urllib.request.urlopen(url).read()
             soup = BeautifulSoup(r, 'html.parser')
-            listings = soup.find_all('li', class_='sresult lvresult clearfix li')
+            listings = soup.find_all('li', class_='sresult ' +
+                                     'lvresult clearfix li')
             for element in listings:
                 listing_id = element['listingid']
                 item = element.find_all('a', class_='img imgWr2')
                 listing_url = item[0]['href']
                 if hasattr(self, 'database'):
-                    if not (listing_id in self.database_ids):
+                    if not (listing_id in self.db_ids):
                         self.unfilled_items.append(EbayItem({'ebay_id': listing_id, 'item_url': listing_url}))
                 else:
                     self.unfilled_items.append(EbayItem({'ebay_id': listing_id, 'item_url': listing_url}))
@@ -118,7 +122,7 @@ class EbayScraper:
             raise ValueError('{} is not a currently supported browser, feel free to make a pull request'.format(BROWSER))
         driver.set_window_rect(x=0, y=0, width=1920//2, height=1080)  # TODO: Remove hardcoding with screeninfo
         driver.accept_untrusted_certs = True
-        driver.assume_untrusted_cert_issuer=True
+        driver.assume_untrusted_cert_issuer = True
         for item in self.unfilled_items:
             try:
                 try:
