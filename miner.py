@@ -13,6 +13,7 @@ from datetime import datetime
 from prompt_toolkit import prompt
 from selenium import webdriver
 
+BROWSER = 'firefox'
 
 DATABASE = 'item_database.csv'
 
@@ -105,7 +106,16 @@ class EbayScraper:
             print('Attribute: {} - Question: {}:'.format(attrib, question))
 
     def process_items(self):
-        driver = webdriver.Firefox()
+        if BROWSER == 'firefox':
+            driver = webdriver.Firefox()
+        elif BROWSER == 'chrome':
+            driver = webdriver.Chrome()
+        elif BROWSER == 'edge':
+            driver = webdriver.Edge()
+        elif BROWSER == 'safari':
+            driver = webdriver.Safari()
+        else:
+            raise ValueError('{} is not a currently supported browser, feel free to make a pull request'.format(BROWSER))
         driver.set_window_rect(x=0, y=0, width=1920//2, height=1080)  # TODO: Remove hardcoding with screeninfo
         driver.accept_untrusted_certs = True
         driver.assume_untrusted_cert_issuer=True
@@ -113,16 +123,22 @@ class EbayScraper:
             try:
                 try:
                     driver.get(item.item_url)
-                except selenium.common.exceptions.WebDriverException:
+                except selenium.common.exceptions.WebDriverException:  # XXX: BAD FIREFOX, FIX THIS
                     pass
                 item.prompt_item_attributes(self.manual_attributes)
                 item.scrape_attributes()
                 self.new_items.append(item)
             except KeyboardInterrupt:
                 print('Ctrl-C Detected...Closing and writing database')
-                driver.quit()
+                try:
+                    driver.quit()
+                except selenium.common.exceptions.WebDriverException:  # XXX: BAD FIREFOX, FIX THIS
+                    pass
                 return
-        driver.quit()
+        try:
+            driver.quit()
+        except selenium.common.exceptions.WebDriverException:  # XXX: BAD FIREFOX, FIX THIS
+            pass
 
 
 class EbayItem:
