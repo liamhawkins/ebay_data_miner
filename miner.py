@@ -3,13 +3,14 @@ TODO:
     Add/Check for Errors
     Implement proper error handling
 '''
-import urllib.request
 import pandas as pd
 import os
+import urllib.request
+import selenium
 from bs4 import BeautifulSoup
 from collections import OrderedDict
-from prompt_toolkit import prompt
 from datetime import datetime
+from prompt_toolkit import prompt
 from selenium import webdriver
 
 
@@ -104,12 +105,24 @@ class EbayScraper:
             print('Attribute: {} - Question: {}:'.format(attrib, question))
 
     def process_items(self):
+        driver = webdriver.Firefox()
+        driver.set_window_rect(x=0, y=0, width=1920//2, height=1080)  # TODO: Remove hardcoding with screeninfo
+        driver.accept_untrusted_certs = True
+        driver.assume_untrusted_cert_issuer=True
         for item in self.unfilled_items:
             try:
+                try:
+                    driver.get(item.item_url)
+                except selenium.common.exceptions.WebDriverException:
+                    pass
                 item.prompt_item_attributes(self.manual_attributes)
+                item.scrape_attributes()
                 self.new_items.append(item)
             except KeyboardInterrupt:
-                break
+                print('Ctrl-C Detected...Closing and writing database')
+                driver.quit()
+                return
+        driver.quit()
 
 
 class EbayItem:
@@ -179,12 +192,6 @@ class EbayItem:
             inp_dict[attrib] = prompt('{} - {}: '.format(self.ebay_id, question))
         self.set_attributes(inp_dict)
         self.scrape_attributes()
-
-    def open_listing(self):
-        pass
-
-    def close_listing(self):
-        pass
 
 
 if __name__ == '__main__':
