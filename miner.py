@@ -25,10 +25,9 @@ MANUAL_ATTRIBUTES['os'] = 'OS'
 MANUAL_ATTRIBUTES['battery'] = 'Battery Included'
 MANUAL_ATTRIBUTES['ac_charger'] = 'AC Charger Included'
 
-AUTO_SCRAPE_ATTRIBUTES = ['listing_type', 'country',
+AUTO_SCRAPE_ATTRIBUTES = ['country',
                           'top_rated', 'price',
                           'shipping']
-
 
 class EbayScraper:
 
@@ -150,29 +149,46 @@ class EbayItem:
             for key in dictionary:
                 setattr(self, key, dictionary[key])
 
-    def get_date_completed(self, soup):
-        span = soup.find('span', {'class': 'timeMs'})
-        ms = span.attrs['timems']
-        self.date_completed = datetime.fromtimestamp(int(ms)/1000)
+    def get_date_completed(self, main_content):
+        try:
+            span = main_content.find('span', {'class': 'timeMs'})
+            ms = span.attrs['timems']
+            self.date_completed = datetime.fromtimestamp(int(ms)/1000)
+        except AttributeError:  # FIXME: Error occurs alot
+            print('CANNOT DETERMINE DATE COMPLETED')
+            self.date_completed = 'PARSING ERROR'
 
-    def get_sold_status(self, soup):
-        div = soup.find('div', {'class': 'vi-bbox-dspn u-flL lable binLable'})
-        sold_ind = str(div.contents[0])
-        if sold_ind == 'Sold for:':
+    def get_sold_type_and_status(self, main_content):
+        sold_for = len(main_content.findAll(text='Sold for:'))
+        winning_bid = len(main_content.findAll(text='Winning bid:'))
+        price = len(main_content.findAll(text='Price:'))
+        starting_bid = len(main_content.findAll(text='Starting bid:'))
+
+        if sold_for > 0 or winning_bid > 0:
             self.sold = 'yes'
-        elif sold_ind == 'Price:':
+        elif price > 0 or starting_bid > 0:
             self.sold = 'no'
         else:
-            print('SCRAPING ERROR! CANNOT FIND SOLD STATUS')
-            self.sold = 'SCRAPING ERROR'
+            print('PARSING ERROR! CANNOT DETERMINE SOLD STATUS')
+            self.sold = 'PARSING ERROR'
+
+        if sold_for > 0 or price > 0:
+            self.listing_type = 'Buy it now'
+        elif winning_bid > 0 or starting_bid > 0:
+            self.listing_type = 'Auction'
+        else:
+            print('PARSING ERROR! CANNOT DETERMINE LISTING TYPE')
+            self.listing_type = 'PARSING ERROR'
+
 
     def scrape_attributes(self, auto_scrape_attributes):
         # TODO: Implement scrapers
         # TODO: Remove usage of auto_scrape_attributes after implementing scrapers
         r = urllib.request.urlopen(self.item_url).read()
         soup = BeautifulSoup(r, 'html5lib')
-        self.get_date_completed(soup)
-        self.get_sold_status(soup)
+        main_content = soup.find('div', id='mainContent')
+        self.get_date_completed(main_content)
+        self.get_sold_type_and_status(main_content)
         scrape_dict = dict()
         for attrib in auto_scrape_attributes:
             scrape_dict[attrib] = 'fake data'
