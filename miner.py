@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 from collections import OrderedDict
 from prompt_toolkit import prompt
 from datetime import datetime
+from selenium import webdriver
 
 
 DATABASE = 'item_database.csv'
@@ -53,14 +54,6 @@ class EbayScraper:
         else:
             item_df.to_csv(DATABASE)
 
-    def open_ebay_listing(self):
-        # TODO: open ebay listing page (selenium?)
-        pass
-
-    def close_ebay_listing(self):
-        # TODO: close ebay listing page (selenium?)
-        pass
-
     def get_search_results(self):
         '''
         Scrapes ebay search results and returns urls of first 3 pages
@@ -84,7 +77,7 @@ class EbayScraper:
         '''
         for url in self.search_result_page_urls:
             r = urllib.request.urlopen(url).read()
-            soup = BeautifulSoup(r, "html.parser")
+            soup = BeautifulSoup(r, 'html.parser')
             listings = soup.find_all('li', class_='sresult lvresult clearfix li')
             for element in listings:
                 listing_id = element['listingid']
@@ -149,6 +142,7 @@ class EbayItem:
             self.date_completed = 'PARSING ERROR'
 
     def get_sold_type_and_status(self, main_content):
+        # TODO: Find better way to do this
         sold_for = len(main_content.findAll(text='Sold for:'))
         winning_bid = len(main_content.findAll(text='Winning bid:'))
         price = len(main_content.findAll(text='Price:'))
@@ -185,6 +179,12 @@ class EbayItem:
             inp_dict[attrib] = prompt('{} - {}: '.format(self.ebay_id, question))
         self.set_attributes(inp_dict)
         self.scrape_attributes()
+
+    def open_listing(self):
+        pass
+
+    def close_listing(self):
+        pass
 
 
 if __name__ == '__main__':
