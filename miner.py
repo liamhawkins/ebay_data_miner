@@ -84,7 +84,7 @@ class EbayScraper:
         '''
         for url in self.search_result_page_urls:
             r = urllib.request.urlopen(url).read()
-            soup = BeautifulSoup(r, "html5lib")
+            soup = BeautifulSoup(r, "html.parser")
             listings = soup.find_all('li', class_='sresult lvresult clearfix li')
             for element in listings:
                 listing_id = element['listingid']
