@@ -2,4 +2,5 @@
 *.swp
 *ipynb*
 *.csv*
+*.log
 prompt_examples/
