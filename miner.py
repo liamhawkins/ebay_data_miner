@@ -26,17 +26,13 @@ MANUAL_ATTRIBUTES['os'] = 'OS'
 MANUAL_ATTRIBUTES['battery'] = 'Battery Included'
 MANUAL_ATTRIBUTES['ac_charger'] = 'AC Charger Included'
 
-AUTO_SCRAPE_ATTRIBUTES = ['country',
-                          'top_rated', 'price',
-                          'shipping']
 
 class EbayScraper:
 
-    def __init__(self, manual_attributes, auto_scrape_attributes):
+    def __init__(self, manual_attributes):
         self.unfilled_items = []
         self.new_items = []
         self.manual_attributes = manual_attributes
-        self.auto_scrape_attributes = auto_scrape_attributes
         self.full_attribute_df = pd.DataFrame()
 
     def read_item_database(self):
@@ -114,17 +110,10 @@ class EbayScraper:
         for attrib, question in self.manual_attributes.items():
             print('Attribute: {} - Question: {}:'.format(attrib, question))
 
-    def print_auto_scrap_attributes(self):
-        '''
-        Prints ebay item attributes that are automatically scraped
-        '''
-        for attrib in self.auto_scrape_attributes:
-            print(attrib)
-
     def process_items(self):
         for item in self.unfilled_items:
             try:
-                item.prompt_item_attributes(self.manual_attributes, self.auto_scrape_attributes)
+                item.prompt_item_attributes(self.manual_attributes)
                 self.new_items.append(item)
             except KeyboardInterrupt:
                 break
@@ -182,29 +171,24 @@ class EbayItem:
             self.listing_type = 'PARSING ERROR'
 
 
-    def scrape_attributes(self, auto_scrape_attributes):
-        # TODO: Implement scrapers
-        # TODO: Remove usage of auto_scrape_attributes after implementing scrapers
+    def scrape_attributes(self):
+        # TODO: Implement scrapers: country, price, shipping, top_rated
         r = urllib.request.urlopen(self.item_url).read()
         soup = BeautifulSoup(r, 'html.parser')
         main_content = soup.find('div', id='mainContent')
         self.get_date_completed(main_content)
         self.get_sold_type_and_status(main_content)
-        scrape_dict = dict()
-        for attrib in auto_scrape_attributes:
-            scrape_dict[attrib] = 'fake data'
-        self.set_attributes(scrape_dict)
 
-    def prompt_item_attributes(self, manual_attributes, auto_scrape_attributes):
+    def prompt_item_attributes(self, manual_attributes):
         inp_dict = dict()
         for attrib, question in manual_attributes.items():
             inp_dict[attrib] = prompt('{} - {}: '.format(self.ebay_id, question))
         self.set_attributes(inp_dict)
-        self.scrape_attributes(auto_scrape_attributes)
+        self.scrape_attributes()
 
 
 if __name__ == '__main__':
-    es = EbayScraper(MANUAL_ATTRIBUTES, AUTO_SCRAPE_ATTRIBUTES)
+    es = EbayScraper(MANUAL_ATTRIBUTES)
     es.read_item_database()
     es.get_search_results()
     es.get_new_items()
