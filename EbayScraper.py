@@ -44,6 +44,7 @@ class EbayScraper:
         self.full_attribute_df = pd.DataFrame()
 
     def read_item_database(self):
+        '''Read DATABASE file and store as EbayScraper.db, and extract 'ebay_id's as strings stored in EbayScraper.db_ids'''
         try:
             self.db = pd.read_csv(DATABASE)
             self.db_ids = [str(i) for i in self.db['ebay_id'].tolist()]
@@ -51,6 +52,7 @@ class EbayScraper:
             print('Database not found, a new one will be created')
 
     def write_item_database(self):
+        '''Write EbayScraper.new_items to DATABASE .csv file'''
         items_attribs = list()
         for item in self.new_items:
             items_attribs.append(vars(item))
@@ -62,9 +64,7 @@ class EbayScraper:
             item_df.to_csv(DATABASE)
 
     def get_search_results(self):
-        '''
-        Scrapes ebay search results and returns urls of first 3 pages
-        '''
+        '''Scrape ebay search results and store urls of first 3 pages in EbayScraper.search_result_page_urls'''
         self.search_result_page_urls = []
         for pg_num in range(1, 4):  # TODO: determine this num with logic
             if pg_num == 1:
@@ -73,16 +73,21 @@ class EbayScraper:
                 page = '&_pgn=' + str(pg_num) + \
                        '&_skc=' + str((pg_num - 1) * 200)
 
-            url = 'http://www.ebay.ca/sch/i.html?_from=R40&_sacat=0' \
-                  '&LH_Complete=1&_udlo=&_udhi=&LH_Auction=1&LH_BIN=1' \
-                  '&_samilow=&_samihi=&_sadis=15&_stpos=k1r7t8&_sop=13' \
-                  '&_dmd=1&_nkw=thinkpad+x220' + page + '&rt=nc'
+            url = (
+               'http://www.ebay.ca/sch/i.html?_from=R40&_sacat=0'
+               '&LH_Complete=1&_udlo=&_udhi=&LH_Auction=1&LH_BIN=1'
+               '&_samilow=&_samihi=&_sadis=15&_stpos=k1r7t8&_sop=13'
+               '&_dmd=1&_nkw=thinkpad+x220' + page + '&rt=nc'
+            )
             self.search_result_page_urls.append(url)
 
     def get_new_items(self):
         '''
-        After search result URLs are scraped,
-        creates dictionary will all itemIDs and item URLs
+        Create EbayItem objects for items not in database
+
+        Parse URLs from EbayScraper.search_result_page_urls, check that corresponding listing id
+        is not already present in DATABASE, and create EbayItem object containing ebay_id and item_url
+        for each listing. Then store each EbayItem in EbayScraper.unfilled_items
         '''
         for url in self.search_result_page_urls:
             r = urllib.request.urlopen(url).read()
@@ -100,20 +105,26 @@ class EbayScraper:
                     self.unfilled_items.append(EbayItem({'ebay_id': listing_id, 'item_url': listing_url}))
 
     def print_items(self):
-        '''
-        Prints ebay items with completed attributes
-        '''
+        '''Print ebay items that have had attributes filled in (Stored in EbayScraper.new_items)'''
         for item in self.new_items:
             print(item)
 
     def print_manual_attributes(self):
-        '''
-        Prints ebay item attributes that need manual input
-        '''
+        '''Prints ebay item attributes that need manual input'''
         for attrib, question in self.manual_attributes.items():
             print('Attribute: {} - Question: {}:'.format(attrib, question))
 
     def process_items(self):
+        '''
+        Loop over EbayScraper.unfilled_items, open url, prompt user for attribute input, then scrape
+
+        Uses BROWSER to determine which selenium webdriver to use. Launches webdriver and opens url
+        from EbayItem.item_url. Then calls EbayItem.prompt_item_attributes() to gather manual input
+        for attributes that cannot be scraped. After manual input is complete it calls
+        EbayItem.scrape_attributes(). After all attributes are collected the EbayItem is appended to
+        EbayScraper.new_items, and this process is repeated with the next EbayItem until CTRL+C is
+        detected or there are no more EbayItem objects in EbayScraper.unfilled_items
+        '''
         if BROWSER == 'firefox':
             driver = webdriver.Firefox()
         elif BROWSER == 'chrome':
@@ -164,20 +175,20 @@ class EbayItem:
                 setattr(self, key, dictionary[key])
 
     def __str__(self):
+        '''Loop over object variables and print each one'''
         attribs = []
         for attr, value in vars(self).items():
             attribs.append('{} - {}'.format(attr, value))
         return '\nEbay item: ' + self.ebay_id + '\n' + '\n'.join(attribs)
 
     def set_attributes(self, *attributes):
-        '''
-        Set/update attributes of instance after instantiation
-        '''
+        '''Set/update attributes of instance after instantiation'''
         for dictionary in attributes:
             for key in dictionary:
                 setattr(self, key, dictionary[key])
 
     def get_date_completed(self, main_content):
+        '''Scrape ebay listing for completion date'''
         try:
             span = main_content.find('span', {'class': 'timeMs'})
             ms = span.attrs['timems']
