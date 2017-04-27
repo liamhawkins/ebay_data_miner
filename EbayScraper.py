@@ -204,6 +204,13 @@ class EbayItem:
             self.date_completed = self.prompt_manual_entry('Date: ')
 
     def get_sold_type_and_status(self, main_content):
+        '''
+        Scrape ebay listing for whether item was sold, and type of listing (Auction/Buy it now)
+
+        Searches ebay listing page for keywords that indicate if item was sold and listing type
+        'Sold for' and 'Winning bid' indicate the listing sold for an auction or BIN respectively
+        'Price' and 'Starting bid' indicate the listing did not sell for an auction or BIN respectively
+        '''
         # TODO: Scrape for # bids if auction
         sold_for = len(main_content.findAll(text='Sold for:'))
         winning_bid = len(main_content.findAll(text='Winning bid:'))
@@ -227,10 +234,12 @@ class EbayItem:
             self.listing_type = self.prompt_manual_entry('Listing type (Auction/Buy it now): ')
 
     def get_location(self, soup):
+        '''Scrape listing page for location item is shipping from'''
         location = soup.find('span', {'itemprop': 'availableAtOrFrom'})
         self.location = location.get_text()
 
     def get_price_shipping_import(self, soup):
+        '''Scrape listing page for price, shipping, and import fees'''
         price = soup.find('span', {'itemprop': 'price'})
         self.price = price.attrs['content']
 
@@ -249,6 +258,7 @@ class EbayItem:
             self.import_cost = 0
 
     def get_seller_information(self, soup):
+        '''Scrape listing page for whether seller is top rated, their feedback score, and positive feedback percentage'''
         top_rated = soup.findAll('a', href='http://pages.ebay.ca/topratedsellers/index.html')
         if len(top_rated) > 0:
             self.top_rated = 1
@@ -265,6 +275,7 @@ class EbayItem:
         self.feedback_percentage = feedback_percentage[0]
 
     def scrape_attributes(self):
+        '''Create BeautifulSoup object that is then passed to parsing methods'''
         # TODO: Implement scrapers: # bids
         print('Scraping in progress...')
         r = urllib.request.urlopen(self.item_url).read()
@@ -276,6 +287,7 @@ class EbayItem:
         self.get_seller_information(soup)
 
     def prompt_item_attributes(self, manual_attributes):
+        '''Prompts user to input attributes defined in MANUAL_ATTRIBUTES'''
         inp_dict = dict()
         for attrib, question in manual_attributes.items():
             inp_dict[attrib] = prompt('{}: '.format(question))
