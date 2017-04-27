@@ -3,7 +3,9 @@ TODO:
     Add/Check for Errors
     Implement proper error handling
     Cleanup requirements.txt
+    Confirm prompts before moving to next
     When scraping error encountered prompt manual entry
+    Fix EbayItem.sold, always set to yes
 '''
 import pandas as pd
 import os
@@ -176,13 +178,12 @@ class EbayItem:
             self.date_completed = 'PARSING ERROR'
 
     def get_sold_type_and_status(self, main_content):
-        # TODO: Find better way to do this
         sold_for = len(main_content.findAll(text='Sold for:'))
         winning_bid = len(main_content.findAll(text='Winning bid:'))
         price = len(main_content.findAll(text='Price:'))
         starting_bid = len(main_content.findAll(text='Starting bid:'))
 
-        if sold_for > 0 or winning_bid > 0:
+        if sold_for > 0 or winning_bid > 0:   # FIXME: ALWAYS RETURNS YES
             self.sold = 'yes'
         elif price > 0 or starting_bid > 0:
             self.sold = 'no'
@@ -217,8 +218,24 @@ class EbayItem:
         import_ = import_.split()
         self.import_cost = import_[1][1:]
 
+    def get_seller_information(self, soup):
+        top_rated = soup.findAll('a', href='http://pages.ebay.ca/topratedsellers/index.html')
+        if len(top_rated) > 0:
+            self.top_rated = 'yes'
+        else:
+            self.top_rated = 'no'
+
+        feedback_score = soup.findAll('span', class_='mbg-l')
+        feedback_score = feedback_score[0].find('a')
+        self.feedback_score = feedback_score.get_text()
+
+        feedback_percentage = soup.find('div', id='si-fb')
+        feedback_percentage = feedback_percentage.get_text()
+        feedback_percentage = feedback_percentage.split('%')
+        self.feedback_percentage = feedback_percentage[0]
+
     def scrape_attributes(self):
-        # TODO: Implement scrapers: price, shipping, top_rated
+        # TODO: Implement scrapers: top_rated, feedback score, positive feedback%, # bids
         r = urllib.request.urlopen(self.item_url).read()
         soup = BeautifulSoup(r, 'html.parser')
         #main_content = soup.find('div', id='mainContent')
@@ -226,6 +243,7 @@ class EbayItem:
         self.get_sold_type_and_status(soup)
         self.get_location(soup)
         self.get_price_shipping_import(soup)
+        self.get_seller_information(soup)
 
     def prompt_item_attributes(self, manual_attributes):
         inp_dict = dict()
