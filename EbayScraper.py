@@ -6,6 +6,7 @@ TODO:
     Confirm prompts before moving to next
     When scraping error encountered prompt manual entry
     Fix EbayItem.sold, always set to yes
+    Add proper doc strings
 '''
 import pandas as pd
 import os
@@ -18,7 +19,6 @@ from prompt_toolkit import prompt
 from selenium import webdriver
 
 BROWSER = 'firefox'
-
 DATABASE = 'item_database.csv'
 
 MANUAL_ATTRIBUTES = OrderedDict()
@@ -235,10 +235,9 @@ class EbayItem:
         self.feedback_percentage = feedback_percentage[0]
 
     def scrape_attributes(self):
-        # TODO: Implement scrapers: top_rated, feedback score, positive feedback%, # bids
+        # TODO: Implement scrapers: # bids
         r = urllib.request.urlopen(self.item_url).read()
         soup = BeautifulSoup(r, 'html.parser')
-        #main_content = soup.find('div', id='mainContent')
         self.get_date_completed(soup)
         self.get_sold_type_and_status(soup)
         self.get_location(soup)
@@ -248,7 +247,7 @@ class EbayItem:
     def prompt_item_attributes(self, manual_attributes):
         inp_dict = dict()
         for attrib, question in manual_attributes.items():
-            inp_dict[attrib] = prompt('{} - {}: '.format(self.ebay_id, question))
+            inp_dict[attrib] = prompt('{}-{}: '.format(self.ebay_id, question))
         self.set_attributes(inp_dict)
         self.scrape_attributes()
 
