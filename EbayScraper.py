@@ -3,6 +3,7 @@ TODO:
     Add/Check for Errors
     Implement proper error handling
     Cleanup requirements.txt
+    When scraping error encountered prompt manual entry
 '''
 import pandas as pd
 import os
@@ -89,7 +90,7 @@ class EbayScraper:
                 listing_id = element['listingid']
                 item = element.find_all('a', class_='img imgWr2')
                 listing_url = item[0]['href']
-                if hasattr(self, 'database'):
+                if hasattr(self, 'db'):
                     if not (listing_id in self.db_ids):
                         self.unfilled_items.append(EbayItem({'ebay_id': listing_id, 'item_url': listing_url}))
                 else:
@@ -197,14 +198,18 @@ class EbayItem:
             print('PARSING ERROR! CANNOT DETERMINE LISTING TYPE')
             self.listing_type = 'PARSING ERROR'
 
+    def get_location(self, soup):
+        location = soup.find('span', {'itemprop': 'availableAtOrFrom'})
+        self.location = location.get_text()
 
     def scrape_attributes(self):
-        # TODO: Implement scrapers: country, price, shipping, top_rated
+        # TODO: Implement scrapers: price, shipping, top_rated
         r = urllib.request.urlopen(self.item_url).read()
         soup = BeautifulSoup(r, 'html.parser')
         main_content = soup.find('div', id='mainContent')
         self.get_date_completed(main_content)
         self.get_sold_type_and_status(main_content)
+        self.get_location(soup)
 
     def prompt_item_attributes(self, manual_attributes):
         inp_dict = dict()
