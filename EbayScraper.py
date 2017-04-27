@@ -123,7 +123,10 @@ class EbayScraper:
             driver = webdriver.Safari()
         else:
             raise ValueError('{} is not a currently supported browser, feel free to make a pull request'.format(BROWSER))
-        driver.set_window_rect(x=0, y=0, width=1920//2, height=1080)  # TODO: Remove hardcoding with screeninfo
+        try:
+            driver.set_window_rect(x=0, y=0, width=1920//2, height=1080)  # TODO: Remove hardcoding with screeninfo
+        except selenium.common.exceptions.WebDriverException:
+            print('Cant set window parameters')
         driver.accept_untrusted_certs = True
         driver.assume_untrusted_cert_issuer = True
         for item in self.unfilled_items:
