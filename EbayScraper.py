@@ -214,9 +214,12 @@ class EbayItem:
         self.shipping = shipping[1][1:]
 
         import_ = soup.find('span', {'id': 'impchCost'})
-        import_ = import_.get_text()
-        import_ = import_.split()
-        self.import_cost = import_[1][1:]
+        if len(import_) > 0:
+            import_ = import_.get_text()
+            import_ = import_.split()
+            self.import_cost = import_[1][1:]
+        else:
+            self.import_cost = 0
 
     def get_seller_information(self, soup):
         top_rated = soup.findAll('a', href='http://pages.ebay.ca/topratedsellers/index.html')
