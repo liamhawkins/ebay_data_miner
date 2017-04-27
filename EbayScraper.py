@@ -214,6 +214,7 @@ class EbayItem:
         price = soup.find('span', {'itemprop': 'price'})
         self.price = price.attrs['content']
 
+        # TODO: Check for free shipping
         shipping = soup.find('span', {'id': 'fshippingCost'})
         shipping = shipping.find('span')
         shipping = shipping.get_text()
