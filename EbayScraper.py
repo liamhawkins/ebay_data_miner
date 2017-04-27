@@ -132,6 +132,11 @@ class EbayScraper:
                     driver.get(item.item_url)
                 except selenium.common.exceptions.WebDriverException:  # XXX: BAD FIREFOX, FIX THIS
                     pass
+                print('--------------')
+                print('({}/{}) - {}'.format(self.unfilled_items.index(item)+1,
+                                            len(self.unfilled_items),
+                                            item.ebay_id))
+                print('--------------')
                 item.prompt_item_attributes(self.manual_attributes)
                 item.scrape_attributes()
                 self.new_items.append(item)
@@ -250,7 +255,7 @@ class EbayItem:
     def prompt_item_attributes(self, manual_attributes):
         inp_dict = dict()
         for attrib, question in manual_attributes.items():
-            inp_dict[attrib] = prompt('{}-{}: '.format(self.ebay_id, question))
+            inp_dict[attrib] = prompt('{}: '.format(question))
         self.set_attributes(inp_dict)
         self.scrape_attributes()
 
