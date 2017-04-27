@@ -90,8 +90,8 @@ class EbayScraper:
                                      'lvresult clearfix li')
             for element in listings:
                 listing_id = element['listingid']
-                item = element.find_all('a', class_='img imgWr2')
-                listing_url = item[0]['href']
+                item = element.find('a', class_='img imgWr2')
+                listing_url = item['href']
                 if hasattr(self, 'db'):
                     if not (listing_id in self.db_ids):
                         self.unfilled_items.append(EbayItem({'ebay_id': listing_id, 'item_url': listing_url}))
@@ -183,6 +183,7 @@ class EbayItem:
             self.date_completed = 'PARSING ERROR'
 
     def get_sold_type_and_status(self, main_content):
+        # TODO: Scrape for # bids if auction
         sold_for = len(main_content.findAll(text='Sold for:'))
         winning_bid = len(main_content.findAll(text='Winning bid:'))
         price = len(main_content.findAll(text='Price:'))
@@ -213,8 +214,8 @@ class EbayItem:
         self.price = price.attrs['content']
 
         shipping = soup.find('span', {'id': 'fshippingCost'})
-        shipping = shipping.findAll('span')
-        shipping = shipping[0].get_text()
+        shipping = shipping.find('span')
+        shipping = shipping.get_text()
         shipping = shipping.split()
         self.shipping = shipping[1][1:]
 
@@ -233,8 +234,8 @@ class EbayItem:
         else:
             self.top_rated = 'no'
 
-        feedback_score = soup.findAll('span', class_='mbg-l')
-        feedback_score = feedback_score[0].find('a')
+        feedback_score = soup.find('span', class_='mbg-l')
+        feedback_score = feedback_score.find('a')
         self.feedback_score = feedback_score.get_text()
 
         feedback_percentage = soup.find('div', id='si-fb')
