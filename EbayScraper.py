@@ -3,7 +3,6 @@ TODO:
     Add/Check for Errors
     Implement proper error handling
     Cleanup requirements.txt
-    Confirm prompts before moving to next
     When scraping error encountered prompt manual entry
     Fix EbayItem.sold, always set to yes
     Add proper doc strings
@@ -187,6 +186,13 @@ class EbayItem:
             for key in dictionary:
                 setattr(self, key, dictionary[key])
 
+    def prompt_manual_entry(self, question):
+        answer = confirm('Would you like to manually enter this attribute? (y/n) ')
+        if answer:
+            return prompt(question)
+        else:
+            return 'PARSING ERROR'
+
     def get_date_completed(self, main_content):
         '''Scrape ebay listing for completion date'''
         try:
@@ -195,7 +201,7 @@ class EbayItem:
             self.date_completed = datetime.fromtimestamp(int(ms)/1000)
         except AttributeError:  # FIXME: Error occurs alot
             print('CANNOT DETERMINE DATE COMPLETED')
-            self.date_completed = 'PARSING ERROR'
+            self.date_completed = self.prompt_manual_entry('Date: ')
 
     def get_sold_type_and_status(self, main_content):
         # TODO: Scrape for # bids if auction
@@ -210,7 +216,7 @@ class EbayItem:
             self.sold = 0
         else:
             print('PARSING ERROR! CANNOT DETERMINE SOLD STATUS')
-            self.sold = 'PARSING ERROR'
+            self.sold = self.prompt_manual_entry('Sold? (1/0) ')
 
         if sold_for > 0 or price > 0:
             self.listing_type = 'Buy it now'
@@ -218,7 +224,7 @@ class EbayItem:
             self.listing_type = 'Auction'
         else:
             print('PARSING ERROR! CANNOT DETERMINE LISTING TYPE')
-            self.listing_type = 'PARSING ERROR'
+            self.listing_type = self.prompt_manual_entry('Listing type (Auction/Buy it now): ')
 
     def get_location(self, soup):
         location = soup.find('span', {'itemprop': 'availableAtOrFrom'})
