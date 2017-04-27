@@ -202,14 +202,30 @@ class EbayItem:
         location = soup.find('span', {'itemprop': 'availableAtOrFrom'})
         self.location = location.get_text()
 
+    def get_price_shipping_import(self, soup):
+        price = soup.find('span', {'itemprop': 'price'})
+        self.price = price.attrs['content']
+
+        shipping = soup.find('span', {'id': 'fshippingCost'})
+        shipping = shipping.findAll('span')
+        shipping = shipping[0].get_text()
+        shipping = shipping.split()
+        self.shipping = shipping[1][1:]
+
+        import_ = soup.find('span', {'id': 'impchCost'})
+        import_ = import_.get_text()
+        import_ = import_.split()
+        self.import_cost = import_[1][1:]
+
     def scrape_attributes(self):
         # TODO: Implement scrapers: price, shipping, top_rated
         r = urllib.request.urlopen(self.item_url).read()
         soup = BeautifulSoup(r, 'html.parser')
-        main_content = soup.find('div', id='mainContent')
-        self.get_date_completed(main_content)
-        self.get_sold_type_and_status(main_content)
+        #main_content = soup.find('div', id='mainContent')
+        self.get_date_completed(soup)
+        self.get_sold_type_and_status(soup)
         self.get_location(soup)
+        self.get_price_shipping_import(soup)
 
     def prompt_item_attributes(self, manual_attributes):
         inp_dict = dict()
