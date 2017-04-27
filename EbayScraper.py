@@ -32,6 +32,7 @@ MANUAL_ATTRIBUTES['sec_hd_type'] = 'Secondary HD Type'
 MANUAL_ATTRIBUTES['os'] = 'OS'
 MANUAL_ATTRIBUTES['battery'] = 'Battery Included'
 MANUAL_ATTRIBUTES['ac_charger'] = 'AC Charger Included'
+MANUAL_ATTRIBUTES['dock'] = 'Dock'
 
 
 class EbayScraper:
