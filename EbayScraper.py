@@ -244,6 +244,7 @@ class EbayItem:
 
     def scrape_attributes(self):
         # TODO: Implement scrapers: # bids
+        print('Scraping in progress...')
         r = urllib.request.urlopen(self.item_url).read()
         soup = BeautifulSoup(r, 'html.parser')
         self.get_date_completed(soup)
@@ -257,7 +258,6 @@ class EbayItem:
         for attrib, question in manual_attributes.items():
             inp_dict[attrib] = prompt('{}: '.format(question))
         self.set_attributes(inp_dict)
-        self.scrape_attributes()
 
 
 if __name__ == '__main__':
