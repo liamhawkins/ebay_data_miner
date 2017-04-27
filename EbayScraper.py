@@ -16,6 +16,7 @@ from bs4 import BeautifulSoup
 from collections import OrderedDict
 from datetime import datetime
 from prompt_toolkit import prompt
+from prompt_toolkit.shortcuts import confirm
 from selenium import webdriver
 
 BROWSER = 'firefox'
@@ -261,7 +262,11 @@ class EbayItem:
         inp_dict = dict()
         for attrib, question in manual_attributes.items():
             inp_dict[attrib] = prompt('{}: '.format(question))
-        self.set_attributes(inp_dict)
+        answer = confirm('\nAre these details correct? (y/n) ')
+        if answer:
+            self.set_attributes(inp_dict)
+        else:
+            self.prompt_item_attributes(manual_attributes)
 
 
 if __name__ == '__main__':
