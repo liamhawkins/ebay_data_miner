@@ -190,9 +190,9 @@ class EbayItem:
         starting_bid = len(main_content.findAll(text='Starting bid:'))
 
         if sold_for > 0 or winning_bid > 0:   # FIXME: ALWAYS RETURNS YES
-            self.sold = 'yes'
+            self.sold = 1
         elif price > 0 or starting_bid > 0:
-            self.sold = 'no'
+            self.sold = 0
         else:
             print('PARSING ERROR! CANNOT DETERMINE SOLD STATUS')
             self.sold = 'PARSING ERROR'
@@ -230,9 +230,9 @@ class EbayItem:
     def get_seller_information(self, soup):
         top_rated = soup.findAll('a', href='http://pages.ebay.ca/topratedsellers/index.html')
         if len(top_rated) > 0:
-            self.top_rated = 'yes'
+            self.top_rated = 1
         else:
-            self.top_rated = 'no'
+            self.top_rated = 0
 
         feedback_score = soup.find('span', class_='mbg-l')
         feedback_score = feedback_score.find('a')
