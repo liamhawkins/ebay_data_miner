@@ -3,7 +3,6 @@ TODO:
     Add/Check for Errors
     Implement proper error handling
     Cleanup requirements.txt
-    Confirm prompts before moving to next
     When scraping error encountered prompt manual entry
     Fix EbayItem.sold, always set to yes
     Add proper doc strings
@@ -16,6 +15,7 @@ from bs4 import BeautifulSoup
 from collections import OrderedDict
 from datetime import datetime
 from prompt_toolkit import prompt
+from prompt_toolkit.shortcuts import confirm
 from selenium import webdriver
 
 BROWSER = 'firefox'
@@ -44,6 +44,7 @@ class EbayScraper:
         self.full_attribute_df = pd.DataFrame()
 
     def read_item_database(self):
+        '''Read DATABASE file and store as EbayScraper.db, and extract 'ebay_id's as strings stored in EbayScraper.db_ids'''
         try:
             self.db = pd.read_csv(DATABASE)
             self.db_ids = [str(i) for i in self.db['ebay_id'].tolist()]
@@ -51,6 +52,7 @@ class EbayScraper:
             print('Database not found, a new one will be created')
 
     def write_item_database(self):
+        '''Write EbayScraper.new_items to DATABASE .csv file'''
         items_attribs = list()
         for item in self.new_items:
             items_attribs.append(vars(item))
@@ -62,9 +64,7 @@ class EbayScraper:
             item_df.to_csv(DATABASE)
 
     def get_search_results(self):
-        '''
-        Scrapes ebay search results and returns urls of first 3 pages
-        '''
+        '''Scrape ebay search results and store urls of first 3 pages in EbayScraper.search_result_page_urls'''
         self.search_result_page_urls = []
         for pg_num in range(1, 4):  # TODO: determine this num with logic
             if pg_num == 1:
@@ -73,16 +73,21 @@ class EbayScraper:
                 page = '&_pgn=' + str(pg_num) + \
                        '&_skc=' + str((pg_num - 1) * 200)
 
-            url = 'http://www.ebay.ca/sch/i.html?_from=R40&_sacat=0' \
-                  '&LH_Complete=1&_udlo=&_udhi=&LH_Auction=1&LH_BIN=1' \
-                  '&_samilow=&_samihi=&_sadis=15&_stpos=k1r7t8&_sop=13' \
-                  '&_dmd=1&_nkw=thinkpad+x220' + page + '&rt=nc'
+            url = (
+               'http://www.ebay.ca/sch/i.html?_from=R40&_sacat=0'
+               '&LH_Complete=1&_udlo=&_udhi=&LH_Auction=1&LH_BIN=1'
+               '&_samilow=&_samihi=&_sadis=15&_stpos=k1r7t8&_sop=13'
+               '&_dmd=1&_nkw=thinkpad+x220' + page + '&rt=nc'
+            )
             self.search_result_page_urls.append(url)
 
     def get_new_items(self):
         '''
-        After search result URLs are scraped,
-        creates dictionary will all itemIDs and item URLs
+        Create EbayItem objects for items not in database
+
+        Parse URLs from EbayScraper.search_result_page_urls, check that corresponding listing id
+        is not already present in DATABASE, and create EbayItem object containing ebay_id and item_url
+        for each listing. Then store each EbayItem in EbayScraper.unfilled_items
         '''
         for url in self.search_result_page_urls:
             r = urllib.request.urlopen(url).read()
@@ -100,20 +105,26 @@ class EbayScraper:
                     self.unfilled_items.append(EbayItem({'ebay_id': listing_id, 'item_url': listing_url}))
 
     def print_items(self):
-        '''
-        Prints ebay items with completed attributes
-        '''
+        '''Print ebay items that have had attributes filled in (Stored in EbayScraper.new_items)'''
         for item in self.new_items:
             print(item)
 
     def print_manual_attributes(self):
-        '''
-        Prints ebay item attributes that need manual input
-        '''
+        '''Prints ebay item attributes that need manual input'''
         for attrib, question in self.manual_attributes.items():
             print('Attribute: {} - Question: {}:'.format(attrib, question))
 
     def process_items(self):
+        '''
+        Loop over EbayScraper.unfilled_items, open url, prompt user for attribute input, then scrape
+
+        Uses BROWSER to determine which selenium webdriver to use. Launches webdriver and opens url
+        from EbayItem.item_url. Then calls EbayItem.prompt_item_attributes() to gather manual input
+        for attributes that cannot be scraped. After manual input is complete it calls
+        EbayItem.scrape_attributes(). After all attributes are collected the EbayItem is appended to
+        EbayScraper.new_items, and this process is repeated with the next EbayItem until CTRL+C is
+        detected or there are no more EbayItem objects in EbayScraper.unfilled_items
+        '''
         if BROWSER == 'firefox':
             driver = webdriver.Firefox()
         elif BROWSER == 'chrome':
@@ -124,7 +135,10 @@ class EbayScraper:
             driver = webdriver.Safari()
         else:
             raise ValueError('{} is not a currently supported browser, feel free to make a pull request'.format(BROWSER))
-        driver.set_window_rect(x=0, y=0, width=1920//2, height=1080)  # TODO: Remove hardcoding with screeninfo
+        try:
+            driver.set_window_rect(x=0, y=0, width=1920//2, height=1080)  # TODO: Remove hardcoding with screeninfo
+        except selenium.common.exceptions.WebDriverException:
+            print('Cant set window parameters')
         driver.accept_untrusted_certs = True
         driver.assume_untrusted_cert_issuer = True
         for item in self.unfilled_items:
@@ -161,29 +175,43 @@ class EbayItem:
                 setattr(self, key, dictionary[key])
 
     def __str__(self):
+        '''Loop over object variables and print each one'''
         attribs = []
         for attr, value in vars(self).items():
             attribs.append('{} - {}'.format(attr, value))
         return '\nEbay item: ' + self.ebay_id + '\n' + '\n'.join(attribs)
 
     def set_attributes(self, *attributes):
-        '''
-        Set/update attributes of instance after instantiation
-        '''
+        '''Set/update attributes of instance after instantiation'''
         for dictionary in attributes:
             for key in dictionary:
                 setattr(self, key, dictionary[key])
 
+    def prompt_manual_entry(self, question):
+        answer = confirm('Would you like to manually enter this attribute? (y/n) ')
+        if answer:
+            return prompt(question)
+        else:
+            return 'PARSING ERROR'
+
     def get_date_completed(self, main_content):
+        '''Scrape ebay listing for completion date'''
         try:
             span = main_content.find('span', {'class': 'timeMs'})
             ms = span.attrs['timems']
             self.date_completed = datetime.fromtimestamp(int(ms)/1000)
         except AttributeError:  # FIXME: Error occurs alot
             print('CANNOT DETERMINE DATE COMPLETED')
-            self.date_completed = 'PARSING ERROR'
+            self.date_completed = self.prompt_manual_entry('Date: ')
 
     def get_sold_type_and_status(self, main_content):
+        '''
+        Scrape ebay listing for whether item was sold, and type of listing (Auction/Buy it now)
+
+        Searches ebay listing page for keywords that indicate if item was sold and listing type
+        'Sold for' and 'Winning bid' indicate the listing sold for an auction or BIN respectively
+        'Price' and 'Starting bid' indicate the listing did not sell for an auction or BIN respectively
+        '''
         # TODO: Scrape for # bids if auction
         sold_for = len(main_content.findAll(text='Sold for:'))
         winning_bid = len(main_content.findAll(text='Winning bid:'))
@@ -196,7 +224,7 @@ class EbayItem:
             self.sold = 0
         else:
             print('PARSING ERROR! CANNOT DETERMINE SOLD STATUS')
-            self.sold = 'PARSING ERROR'
+            self.sold = self.prompt_manual_entry('Sold? (1/0) ')
 
         if sold_for > 0 or price > 0:
             self.listing_type = 'Buy it now'
@@ -204,13 +232,15 @@ class EbayItem:
             self.listing_type = 'Auction'
         else:
             print('PARSING ERROR! CANNOT DETERMINE LISTING TYPE')
-            self.listing_type = 'PARSING ERROR'
+            self.listing_type = self.prompt_manual_entry('Listing type (Auction/Buy it now): ')
 
     def get_location(self, soup):
+        '''Scrape listing page for location item is shipping from'''
         location = soup.find('span', {'itemprop': 'availableAtOrFrom'})
         self.location = location.get_text()
 
     def get_price_shipping_import(self, soup):
+        '''Scrape listing page for price, shipping, and import fees'''
         price = soup.find('span', {'itemprop': 'price'})
         self.price = price.attrs['content']
 
@@ -230,6 +260,7 @@ class EbayItem:
             self.import_cost = 0
 
     def get_seller_information(self, soup):
+        '''Scrape listing page for whether seller is top rated, their feedback score, and positive feedback percentage'''
         top_rated = soup.findAll('a', href='http://pages.ebay.ca/topratedsellers/index.html')
         if len(top_rated) > 0:
             self.top_rated = 1
@@ -246,6 +277,7 @@ class EbayItem:
         self.feedback_percentage = feedback_percentage[0]
 
     def scrape_attributes(self):
+        '''Create BeautifulSoup object that is then passed to parsing methods'''
         # TODO: Implement scrapers: # bids
         print('Scraping in progress...')
         r = urllib.request.urlopen(self.item_url).read()
@@ -257,10 +289,15 @@ class EbayItem:
         self.get_seller_information(soup)
 
     def prompt_item_attributes(self, manual_attributes):
+        '''Prompts user to input attributes defined in MANUAL_ATTRIBUTES'''
         inp_dict = dict()
         for attrib, question in manual_attributes.items():
             inp_dict[attrib] = prompt('{}: '.format(question))
-        self.set_attributes(inp_dict)
+        answer = confirm('\nAre these details correct? (y/n) ')
+        if answer:
+            self.set_attributes(inp_dict)
+        else:
+            self.prompt_item_attributes(manual_attributes)
 
 
 if __name__ == '__main__':
