@@ -11,6 +11,7 @@ import pandas as pd
 import os
 import urllib.request
 import selenium
+import json
 from bs4 import BeautifulSoup
 from collections import OrderedDict
 from datetime import datetime
@@ -223,13 +224,9 @@ class EbayItem:
         'Price' and 'Starting bid' indicate the listing did not sell for an auction or BIN respectively
         '''
         sold_for = len(main_content.findAll(text='Sold for:'))
-        print('SOLDFOR', sold_for)
         winning_bid = len(main_content.findAll(text='Winning bid:'))
-        print('WINNINGBID', winning_bid)
         price = len(main_content.findAll(text='Price:'))
-        print('PRICE', price)
         starting_bid = len(main_content.findAll(text='Starting bid:'))
-        print('STARTINGBID', starting_bid)
 
         if price > 0 or starting_bid > 1:
             self.sold = 0
@@ -289,12 +286,18 @@ class EbayItem:
         feedback_percentage = feedback_percentage.split('%')
         self.feedback_percentage = feedback_percentage[0]
 
+    def get_json(self, soup):
+        jsondata = str(soup).split('"isModel":')
+        jsondata = jsondata[1].split(',"isRedesign"')
+        jsondata = json.loads(jsondata[0])
+
     def scrape_attributes(self):
         '''Create BeautifulSoup object that is then passed to parsing methods'''
         # TODO: Implement scrapers:
         print('Scraping in progress...')
         r = urllib.request.urlopen(self.item_url).read()
         soup = BeautifulSoup(r, 'html.parser')
+        self.get_json(soup)
         self.get_date_completed(soup)
         self.get_sold_type_and_status(soup)
         self.get_location(soup)
