@@ -3,9 +3,9 @@ TODO:
     Add/Check for Errors
     Implement proper error handling
     Cleanup requirements.txt
-    When scraping error encountered prompt manual entry
     Fix EbayItem.sold, always set to yes
     Add proper doc strings
+    Implement scrapping of embedded JSON for more/better attributes
 '''
 import pandas as pd
 import os
@@ -47,6 +47,7 @@ class EbayScraper:
         self.full_attribute_df = pd.DataFrame()
 
     def read_item_database(self):
+        # TODO: UPDATE DOC STRING
         '''Read DATABASE file and store as EbayScraper.db, and extract 'ebay_id's as strings stored in EbayScraper.db_ids'''
         self.completion_dict = dict()
         try:
@@ -222,16 +223,19 @@ class EbayItem:
         'Sold for' and 'Winning bid' indicate the listing sold for an auction or BIN respectively
         'Price' and 'Starting bid' indicate the listing did not sell for an auction or BIN respectively
         '''
-        # TODO: Scrape for # bids if auction
         sold_for = len(main_content.findAll(text='Sold for:'))
+        print('SOLDFOR', sold_for)
         winning_bid = len(main_content.findAll(text='Winning bid:'))
+        print('WINNINGBID', winning_bid)
         price = len(main_content.findAll(text='Price:'))
+        print('PRICE', price)
         starting_bid = len(main_content.findAll(text='Starting bid:'))
+        print('STARTINGBID', starting_bid)
 
-        if sold_for > 0 or winning_bid > 0:   # FIXME: ALWAYS RETURNS YES
-            self.sold = 1
-        elif price > 0 or starting_bid > 0:
+        if price > 0 or starting_bid > 1:
             self.sold = 0
+        elif sold_for > 0 or winning_bid > 1:
+            self.sold = 1
         else:
             print('PARSING ERROR! CANNOT DETERMINE SOLD STATUS')
             self.sold = self.prompt_manual_entry('Sold? (1/0) ')
@@ -288,7 +292,7 @@ class EbayItem:
 
     def scrape_attributes(self):
         '''Create BeautifulSoup object that is then passed to parsing methods'''
-        # TODO: Implement scrapers: # bids
+        # TODO: Implement scrapers:
         print('Scraping in progress...')
         r = urllib.request.urlopen(self.item_url).read()
         soup = BeautifulSoup(r, 'html.parser')
