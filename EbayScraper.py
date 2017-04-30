@@ -205,16 +205,6 @@ class EbayItem:
         else:
             return 'PARSING ERROR'
 
-    def get_date_completed(self, main_content):
-        '''Scrape ebay listing for completion date'''
-        try:
-            span = main_content.find('span', {'class': 'timeMs'})
-            ms = span.attrs['timems']
-            self.date_completed = datetime.fromtimestamp(int(ms)/1000)
-        except AttributeError:  # FIXME: Error occurs alot
-            print('CANNOT DETERMINE DATE COMPLETED')
-            self.date_completed = self.prompt_manual_entry('Date: ')
-
     def get_sold_type_and_status(self, main_content):
         '''
         Scrape ebay listing for whether item was sold, and type of listing (Auction/Buy it now)
@@ -286,17 +276,21 @@ class EbayItem:
         feedback_percentage = feedback_percentage.split('%')
         self.feedback_percentage = feedback_percentage[0]
 
-    def get_json(self, soup):
+    @staticmethod
+    def get_json(soup):
         json_start = str(soup).find('{"largeButton"')
         json_end = str(soup).find('"key":"ItemSummary"}')
-        json_data = str(soup)[json_start:json_end+len('"key":"ItemSymmary"}')]
+        json_data = str(soup)[json_start:json_end+len('"key":"ItemSummary"}')]
         json_data = json.loads(json_data)
         return json_data
 
-    def get_json_times(self, jsondata):
-        print('Start time: {}'.format(json_data['startTime']))
-        print('End time: {}'.format(json_data['endTime']))
-        print('BIN Price: {}'.format(json_data['binPrice']))
+    def get_json_times(self, json_data):
+        self.start_time = json_data['startTime']
+        self.end_time = json_data['endTime']
+
+        start = datetime.fromtimestamp(int(self.start_time)//1000)
+        end = datetime.fromtimestamp(int(self.end_time)//1000)
+        self.duration_days = (end - start).days
 
     def scrape_attributes(self):
         '''Create BeautifulSoup object that is then passed to parsing methods'''
@@ -306,7 +300,6 @@ class EbayItem:
         soup = BeautifulSoup(r, 'html.parser')
         json_data = self.get_json(soup)
         self.get_json_times(json_data)
-        self.get_date_completed(soup)
         self.get_sold_type_and_status(soup)
         self.get_location(soup)
         self.get_price_shipping_import(soup)
