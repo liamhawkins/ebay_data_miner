@@ -16,6 +16,9 @@ from collections import OrderedDict
 from datetime import datetime
 from prompt_toolkit import prompt
 from prompt_toolkit.shortcuts import confirm
+from prompt_toolkit.history import InMemoryHistory
+from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+from prompt_toolkit.contrib.completers import WordCompleter
 from selenium import webdriver
 
 BROWSER = 'firefox'
@@ -45,10 +48,17 @@ class EbayScraper:
 
     def read_item_database(self):
         '''Read DATABASE file and store as EbayScraper.db, and extract 'ebay_id's as strings stored in EbayScraper.db_ids'''
+        self.completion_dict = dict()
         try:
             self.db = pd.read_csv(DATABASE)
             self.db_ids = [str(i) for i in self.db['ebay_id'].tolist()]
+
+            for key in self.manual_attributes:
+                self.completion_dict[key] = WordCompleter([str(i) for i in self.db[key].tolist()], ignore_case=True)
+
         except FileNotFoundError:
+            for key in self.manual_attributes:
+                self.completion_dict[key] = WordCompleter([], ignore_case=True)  # TODO: Refactor to avoid duplication
             print('Database not found, a new one will be created')
 
     def write_item_database(self):
@@ -152,7 +162,7 @@ class EbayScraper:
                                             len(self.unfilled_items),
                                             item.ebay_id))
                 print('--------------')
-                item.prompt_item_attributes(self.manual_attributes)
+                self.completion_dict = item.prompt_item_attributes(self.manual_attributes, self.completion_dict)
                 item.scrape_attributes()
                 self.new_items.append(item)
             except KeyboardInterrupt:
@@ -288,16 +298,21 @@ class EbayItem:
         self.get_price_shipping_import(soup)
         self.get_seller_information(soup)
 
-    def prompt_item_attributes(self, manual_attributes):
+    def prompt_item_attributes(self, manual_attributes, completion_dict):
+        # TODO: UPDATE DOC STRING
         '''Prompts user to input attributes defined in MANUAL_ATTRIBUTES'''
         inp_dict = dict()
         for attrib, question in manual_attributes.items():
-            inp_dict[attrib] = prompt('{}: '.format(question))
+            inp_dict[attrib] = prompt('{}: '.format(question), completer=completion_dict[attrib], complete_while_typing=True)
+            if inp_dict[attrib] not in completion_dict[attrib].words:
+                completion_dict[attrib].words.append(inp_dict[attrib])
         answer = confirm('\nAre these details correct? (y/n) ')
         if answer:
             self.set_attributes(inp_dict)
         else:
-            self.prompt_item_attributes(manual_attributes)
+            completion_dict = self.prompt_item_attributes(manual_attributes, completion_dict)
+
+        return completion_dict
 
 
 if __name__ == '__main__':
