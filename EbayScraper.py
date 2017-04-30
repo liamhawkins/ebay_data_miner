@@ -287,9 +287,16 @@ class EbayItem:
         self.feedback_percentage = feedback_percentage[0]
 
     def get_json(self, soup):
-        jsondata = str(soup).split('"isModel":')
-        jsondata = jsondata[1].split(',"isRedesign"')
-        jsondata = json.loads(jsondata[0])
+        json_start = str(soup).find('{"largeButton"')
+        json_end = str(soup).find('"key":"ItemSummary"}')
+        json_data = str(soup)[json_start:json_end+len('"key":"ItemSymmary"}')]
+        json_data = json.loads(json_data)
+        return json_data
+
+    def get_json_times(self, jsondata):
+        print('Start time: {}'.format(json_data['startTime']))
+        print('End time: {}'.format(json_data['endTime']))
+        print('BIN Price: {}'.format(json_data['binPrice']))
 
     def scrape_attributes(self):
         '''Create BeautifulSoup object that is then passed to parsing methods'''
@@ -297,7 +304,8 @@ class EbayItem:
         print('Scraping in progress...')
         r = urllib.request.urlopen(self.item_url).read()
         soup = BeautifulSoup(r, 'html.parser')
-        self.get_json(soup)
+        json_data = self.get_json(soup)
+        self.get_json_times(json_data)
         self.get_date_completed(soup)
         self.get_sold_type_and_status(soup)
         self.get_location(soup)
