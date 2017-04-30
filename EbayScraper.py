@@ -16,8 +16,6 @@ from collections import OrderedDict
 from datetime import datetime
 from prompt_toolkit import prompt
 from prompt_toolkit.shortcuts import confirm
-from prompt_toolkit.history import InMemoryHistory
-from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.contrib.completers import WordCompleter
 from selenium import webdriver
 
@@ -47,8 +45,8 @@ class EbayScraper:
         self.full_attribute_df = pd.DataFrame()
 
     def read_item_database(self):
-        # TODO: UPDATE DOC STRING
         '''Read DATABASE file and store as EbayScraper.db, and extract 'ebay_id's as strings stored in EbayScraper.db_ids'''
+        # TODO: UPDATE DOC STRING
         self.completion_dict = dict()
         try:
             self.db = pd.read_csv(DATABASE)
@@ -198,7 +196,8 @@ class EbayItem:
             for key in dictionary:
                 setattr(self, key, dictionary[key])
 
-    def prompt_manual_entry(self, question):
+    @staticmethod
+    def prompt_manual_entry(question):
         answer = confirm('Would you like to manually enter this attribute? (y/n) ')
         if answer:
             return prompt(question)
@@ -303,8 +302,8 @@ class EbayItem:
         self.get_seller_information(soup)
 
     def prompt_item_attributes(self, manual_attributes, completion_dict):
-        # TODO: UPDATE DOC STRING
         '''Prompts user to input attributes defined in MANUAL_ATTRIBUTES'''
+        # TODO: UPDATE DOC STRING
         inp_dict = dict()
         for attrib, question in manual_attributes.items():
             inp_dict[attrib] = prompt('{}: '.format(question), completer=completion_dict[attrib], complete_while_typing=True)
