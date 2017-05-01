@@ -155,6 +155,7 @@ class EbayScraper:
         for item in self.unfilled_items:
             try:
                 try:
+                    print('Loading listing webpage...')
                     driver.get(item.item_url)
                 except selenium.common.exceptions.WebDriverException:  # XXX: BAD FIREFOX, FIX THIS
                     pass
@@ -206,45 +207,13 @@ class EbayItem:
         else:
             return 'PARSING ERROR'
 
-    def get_sold_type_and_status(self, main_content):
-        '''
-        Scrape ebay listing for whether item was sold, and type of listing (Auction/Buy it now)
-
-        Searches ebay listing page for keywords that indicate if item was sold and listing type
-        'Sold for' and 'Winning bid' indicate the listing sold for an auction or BIN respectively
-        'Price' and 'Starting bid' indicate the listing did not sell for an auction or BIN respectively
-        '''
-        sold_for = len(main_content.findAll(text='Sold for:'))
-        winning_bid = len(main_content.findAll(text='Winning bid:'))
-        price = len(main_content.findAll(text='Price:'))
-        starting_bid = len(main_content.findAll(text='Starting bid:'))
-
-        if price > 0 or starting_bid > 1:
-            self.sold = 0
-        elif sold_for > 0 or winning_bid > 1:
-            self.sold = 1
-        else:
-            print('PARSING ERROR! CANNOT DETERMINE SOLD STATUS')
-            self.sold = self.prompt_manual_entry('Sold? (1/0) ')
-
-        if sold_for > 0 or price > 0:
-            self.listing_type = 'Buy it now'
-        elif winning_bid > 0 or starting_bid > 0:
-            self.listing_type = 'Auction'
-        else:
-            print('PARSING ERROR! CANNOT DETERMINE LISTING TYPE')
-            self.listing_type = self.prompt_manual_entry('Listing type (Auction/Buy it now): ')
-
     def get_location(self, soup):
         '''Scrape listing page for location item is shipping from'''
         location = soup.find('span', {'itemprop': 'availableAtOrFrom'})
         self.location = location.get_text()
 
     def get_price_shipping_import(self, soup):
-        '''Scrape listing page for price, shipping, and import fees'''
-        price = soup.find('span', {'itemprop': 'price'})
-        self.price = price.attrs['content']
-
+        '''Scrape listing page for shipping, and import fees'''
         # TODO: Check for free shipping
         shipping = soup.find('span', {'id': 'fshippingCost'})
         try:
@@ -288,11 +257,7 @@ class EbayItem:
         json_start = str(soup).find('{"largeButton"')
         json_end = str(soup).find('"key":"ItemSummary"}')
         json_data = str(soup)[json_start:json_end+len('"key":"ItemSummary"}')]
-        try:
-            json_data = json.loads(json_data)
-        except json.JSONDecodeError:
-            print('ERROR DUMPING JSON:')
-            print(json_data)
+        json_data = json.loads(json_data)
         return json_data
 
     def get_times(self, json_data):
@@ -322,21 +287,22 @@ class EbayItem:
 
         self.bids = json_data['totalBids']
 
-
-
     def scrape_attributes(self):
         '''Create BeautifulSoup object that is then passed to parsing methods'''
         # TODO: Implement scrapers:
         print('Scraping in progress...')
-        r = urllib.request.urlopen(self.item_url).read()
-        soup = BeautifulSoup(r, 'html.parser')
-        json_data = self.get_json(soup)
-        self.get_times(json_data)
-        self.get_json_listing_type_and_status(json_data)
-        #self.get_sold_type_and_status(soup)
-        self.get_location(soup)
-        self.get_price_shipping_import(soup)
-        self.get_seller_information(soup)
+        try:
+            r = urllib.request.urlopen(self.item_url).read()
+            soup = BeautifulSoup(r, 'html.parser')
+            json_data = self.get_json(soup)
+            self.get_times(json_data)
+            self.get_json_listing_type_and_status(json_data)
+            self.get_location(soup)
+            self.get_price_shipping_import(soup)
+            self.get_seller_information(soup)
+        except json.JSONDecodeError:
+            print('JSON ERROR - RETRYING')
+            self.scrape_attributes()
 
     def prompt_item_attributes(self, manual_attributes, completion_dict):
         '''Prompts user to input attributes defined in MANUAL_ATTRIBUTES'''
