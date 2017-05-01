@@ -3,19 +3,21 @@ TODO:
     Add/Check for Errors
     Implement proper error handling
     Cleanup requirements.txt
-    When scraping error encountered prompt manual entry
     Fix EbayItem.sold, always set to yes
     Add proper doc strings
+    Implement scrapping of embedded JSON for more/better attributes
 '''
 import pandas as pd
 import os
 import urllib.request
 import selenium
+import json
 from bs4 import BeautifulSoup
 from collections import OrderedDict
 from datetime import datetime
 from prompt_toolkit import prompt
 from prompt_toolkit.shortcuts import confirm
+from prompt_toolkit.contrib.completers import WordCompleter
 from selenium import webdriver
 
 BROWSER = 'firefox'
@@ -32,6 +34,7 @@ MANUAL_ATTRIBUTES['sec_hd_type'] = 'Secondary HD Type'
 MANUAL_ATTRIBUTES['os'] = 'OS'
 MANUAL_ATTRIBUTES['battery'] = 'Battery Included'
 MANUAL_ATTRIBUTES['ac_charger'] = 'AC Charger Included'
+MANUAL_ATTRIBUTES['dock'] = 'Dock'
 
 
 class EbayScraper:
@@ -44,10 +47,18 @@ class EbayScraper:
 
     def read_item_database(self):
         '''Read DATABASE file and store as EbayScraper.db, and extract 'ebay_id's as strings stored in EbayScraper.db_ids'''
+        # TODO: UPDATE DOC STRING
+        self.completion_dict = dict()
         try:
             self.db = pd.read_csv(DATABASE)
             self.db_ids = [str(i) for i in self.db['ebay_id'].tolist()]
+
+            for key in self.manual_attributes:
+                self.completion_dict[key] = WordCompleter([str(i) for i in self.db[key].tolist()], ignore_case=True)
+
         except FileNotFoundError:
+            for key in self.manual_attributes:
+                self.completion_dict[key] = WordCompleter([], ignore_case=True)  # TODO: Refactor to avoid duplication
             print('Database not found, a new one will be created')
 
     def write_item_database(self):
@@ -151,7 +162,7 @@ class EbayScraper:
                                             len(self.unfilled_items),
                                             item.ebay_id))
                 print('--------------')
-                item.prompt_item_attributes(self.manual_attributes)
+                self.completion_dict = item.prompt_item_attributes(self.manual_attributes, self.completion_dict)
                 item.scrape_attributes()
                 self.new_items.append(item)
             except KeyboardInterrupt:
@@ -186,22 +197,13 @@ class EbayItem:
             for key in dictionary:
                 setattr(self, key, dictionary[key])
 
-    def prompt_manual_entry(self, question):
+    @staticmethod
+    def prompt_manual_entry(question):
         answer = confirm('Would you like to manually enter this attribute? (y/n) ')
         if answer:
             return prompt(question)
         else:
             return 'PARSING ERROR'
-
-    def get_date_completed(self, main_content):
-        '''Scrape ebay listing for completion date'''
-        try:
-            span = main_content.find('span', {'class': 'timeMs'})
-            ms = span.attrs['timems']
-            self.date_completed = datetime.fromtimestamp(int(ms)/1000)
-        except AttributeError:  # FIXME: Error occurs alot
-            print('CANNOT DETERMINE DATE COMPLETED')
-            self.date_completed = self.prompt_manual_entry('Date: ')
 
     def get_sold_type_and_status(self, main_content):
         '''
@@ -211,16 +213,15 @@ class EbayItem:
         'Sold for' and 'Winning bid' indicate the listing sold for an auction or BIN respectively
         'Price' and 'Starting bid' indicate the listing did not sell for an auction or BIN respectively
         '''
-        # TODO: Scrape for # bids if auction
         sold_for = len(main_content.findAll(text='Sold for:'))
         winning_bid = len(main_content.findAll(text='Winning bid:'))
         price = len(main_content.findAll(text='Price:'))
         starting_bid = len(main_content.findAll(text='Starting bid:'))
 
-        if sold_for > 0 or winning_bid > 0:   # FIXME: ALWAYS RETURNS YES
-            self.sold = 1
-        elif price > 0 or starting_bid > 0:
+        if price > 0 or starting_bid > 1:
             self.sold = 0
+        elif sold_for > 0 or winning_bid > 1:
+            self.sold = 1
         else:
             print('PARSING ERROR! CANNOT DETERMINE SOLD STATUS')
             self.sold = self.prompt_manual_entry('Sold? (1/0) ')
@@ -243,6 +244,7 @@ class EbayItem:
         price = soup.find('span', {'itemprop': 'price'})
         self.price = price.attrs['content']
 
+        # TODO: Check for free shipping
         shipping = soup.find('span', {'id': 'fshippingCost'})
         shipping = shipping.find('span')
         shipping = shipping.get_text()
@@ -274,28 +276,50 @@ class EbayItem:
         feedback_percentage = feedback_percentage.split('%')
         self.feedback_percentage = feedback_percentage[0]
 
+    @staticmethod
+    def get_json(soup):
+        json_start = str(soup).find('{"largeButton"')
+        json_end = str(soup).find('"key":"ItemSummary"}')
+        json_data = str(soup)[json_start:json_end+len('"key":"ItemSummary"}')]
+        json_data = json.loads(json_data)
+        return json_data
+
+    def get_json_times(self, json_data):
+        self.start_time = json_data['startTime']
+        self.end_time = json_data['endTime']
+
+        start = datetime.fromtimestamp(int(self.start_time)//1000)
+        end = datetime.fromtimestamp(int(self.end_time)//1000)
+        self.duration_days = (end - start).days
+
     def scrape_attributes(self):
         '''Create BeautifulSoup object that is then passed to parsing methods'''
-        # TODO: Implement scrapers: # bids
+        # TODO: Implement scrapers:
         print('Scraping in progress...')
         r = urllib.request.urlopen(self.item_url).read()
         soup = BeautifulSoup(r, 'html.parser')
-        self.get_date_completed(soup)
+        json_data = self.get_json(soup)
+        self.get_json_times(json_data)
         self.get_sold_type_and_status(soup)
         self.get_location(soup)
         self.get_price_shipping_import(soup)
         self.get_seller_information(soup)
 
-    def prompt_item_attributes(self, manual_attributes):
+    def prompt_item_attributes(self, manual_attributes, completion_dict):
         '''Prompts user to input attributes defined in MANUAL_ATTRIBUTES'''
+        # TODO: UPDATE DOC STRING
         inp_dict = dict()
         for attrib, question in manual_attributes.items():
-            inp_dict[attrib] = prompt('{}: '.format(question))
+            inp_dict[attrib] = prompt('{}: '.format(question), completer=completion_dict[attrib], complete_while_typing=True)
+            if inp_dict[attrib] not in completion_dict[attrib].words:
+                completion_dict[attrib].words.append(inp_dict[attrib])
         answer = confirm('\nAre these details correct? (y/n) ')
         if answer:
             self.set_attributes(inp_dict)
         else:
-            self.prompt_item_attributes(manual_attributes)
+            completion_dict = self.prompt_item_attributes(manual_attributes, completion_dict)
+
+        return completion_dict
 
 
 if __name__ == '__main__':
