@@ -199,14 +199,6 @@ class EbayItem:
             for key in dictionary:
                 setattr(self, key, dictionary[key])
 
-    @staticmethod
-    def prompt_manual_entry(question):
-        answer = confirm('Would you like to manually enter this attribute? (y/n) ')
-        if answer:
-            return prompt(question)
-        else:
-            return 'PARSING ERROR'
-
     def get_location(self, soup):
         '''Scrape listing page for location item is shipping from'''
         location = soup.find('span', {'itemprop': 'availableAtOrFrom'})
