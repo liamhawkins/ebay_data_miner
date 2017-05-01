@@ -35,6 +35,7 @@ MANUAL_ATTRIBUTES['os'] = 'OS'
 MANUAL_ATTRIBUTES['battery'] = 'Battery Included'
 MANUAL_ATTRIBUTES['ac_charger'] = 'AC Charger Included'
 MANUAL_ATTRIBUTES['dock'] = 'Dock'
+MANUAL_ATTRIBUTES['lot_size'] = 'Lot Size'
 
 
 class EbayScraper:
@@ -246,10 +247,16 @@ class EbayItem:
 
         # TODO: Check for free shipping
         shipping = soup.find('span', {'id': 'fshippingCost'})
-        shipping = shipping.find('span')
-        shipping = shipping.get_text()
-        shipping = shipping.split()
-        self.shipping = shipping[1][1:]
+        try:
+            shipping = shipping.find('span')
+            shipping = shipping.get_text()
+            if shipping == 'FREE':
+                self.shipping = 0
+            else:
+                shipping = shipping.split()
+                self.shipping = shipping[1][1:]
+        except AttributeError:
+            self.shipping = 'Does not ship to Canada'
 
         import_ = soup.find('span', {'id': 'impchCost'})
         if len(import_) > 0:
@@ -281,16 +288,41 @@ class EbayItem:
         json_start = str(soup).find('{"largeButton"')
         json_end = str(soup).find('"key":"ItemSummary"}')
         json_data = str(soup)[json_start:json_end+len('"key":"ItemSummary"}')]
-        json_data = json.loads(json_data)
+        try:
+            json_data = json.loads(json_data)
+        except json.JSONDecodeError:
+            print('ERROR DUMPING JSON:')
+            print(json_data)
         return json_data
 
-    def get_json_times(self, json_data):
+    def get_times(self, json_data):
         self.start_time = json_data['startTime']
         self.end_time = json_data['endTime']
 
         start = datetime.fromtimestamp(int(self.start_time)//1000)
         end = datetime.fromtimestamp(int(self.end_time)//1000)
         self.duration_days = (end - start).days
+
+    def get_json_listing_type_and_status(self, json_data):
+        self.item_condition = json_data['itmCondition']
+
+        if json_data['bin']:
+            self.listing_type = 'Buy it now'
+            self.price = json_data['convertedBinPrice']
+        elif json_data['bid']:
+            self.listing_type = 'Auction'
+            self.price = json_data['convertedBidPrice']
+
+        if json_data['won'] or json_data['sold']:
+            self.sold = 'True'
+        elif json_data['reserveNotMet']:
+            self.sold = 'Reserve Not Met'
+        else:
+            self.sold = 'False'
+
+        self.bids = json_data['totalBids']
+
+
 
     def scrape_attributes(self):
         '''Create BeautifulSoup object that is then passed to parsing methods'''
@@ -299,8 +331,9 @@ class EbayItem:
         r = urllib.request.urlopen(self.item_url).read()
         soup = BeautifulSoup(r, 'html.parser')
         json_data = self.get_json(soup)
-        self.get_json_times(json_data)
-        self.get_sold_type_and_status(soup)
+        self.get_times(json_data)
+        self.get_json_listing_type_and_status(json_data)
+        #self.get_sold_type_and_status(soup)
         self.get_location(soup)
         self.get_price_shipping_import(soup)
         self.get_seller_information(soup)
