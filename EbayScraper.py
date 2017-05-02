@@ -3,9 +3,8 @@ TODO:
     Add/Check for Errors
     Implement proper error handling
     Cleanup requirements.txt
-    Fix EbayItem.sold, always set to yes
     Add proper doc strings
-    Implement scrapping of embedded JSON for more/better attributes
+    remove hardcoding url
 '''
 import pandas as pd
 import os
@@ -74,15 +73,28 @@ class EbayScraper:
         else:
             item_df.to_csv(DATABASE)
 
+    def get_num_search_result_pages(self, orig_url):
+        r = urllib.request.urlopen(orig_url).read()
+        soup = BeautifulSoup(r, 'html.parser')
+        num_results = soup.find('span', class_='rcnt').get_text()
+        num_results_pages = int(int(num_results) / 50)
+        return num_results_pages if num_results_pages % 50 == 0 else num_results_pages + 1
+
+
     def get_search_results(self):
         '''Scrape ebay search results and store urls of first 3 pages in EbayScraper.search_result_page_urls'''
         self.search_result_page_urls = []
-        for pg_num in range(1, 4):  # TODO: determine this num with logic
+        orig_url = ('http://www.ebay.ca/sch/i.html?_from=R40&_nkw=thinkpad+x220'
+                    '&_in_kw=1&_ex_kw=&_sacat=0&LH_Complete=1&_udlo=&_udhi=&LH_A'
+                    'uction=1&LH_BIN=1&_samilow=&_samihi=&_sadis=15&_stpos=k1r7t8'
+                    '&_sargn=-1%26saslc%3D1&_salic=2&_sop=13&_dmd=1&_ipg=200')
+        num_search_result_pages = self.get_num_search_result_pages(orig_url)
+        for pg_num in range(num_search_result_pages + 1):  # TODO: determine this num with logic
             if pg_num == 1:
                 page = ''
             else:
                 page = '&_pgn=' + str(pg_num) + \
-                       '&_skc=' + str((pg_num - 1) * 200)
+                       '&_skc=' + str((pg_num - 1) * 50)
 
             url = (
                'http://www.ebay.ca/sch/i.html?_from=R40&_sacat=0'
@@ -108,7 +120,11 @@ class EbayScraper:
             for element in listings:
                 listing_id = element['listingid']
                 item = element.find('a', class_='img imgWr2')
-                listing_url = item['href']
+                # TODO: Find out what causes this error
+                try:
+                    listing_url = item['href']
+                except TypeError:
+                    pass
                 if hasattr(self, 'db'):
                     if not (listing_id in self.db_ids):
                         self.unfilled_items.append(EbayItem({'ebay_id': listing_id, 'item_url': listing_url}))
@@ -207,7 +223,6 @@ class EbayItem:
 
     def get_price_shipping_import(self, soup):
         '''Scrape listing page for shipping, and import fees'''
-        # TODO: Check for free shipping
         shipping = soup.find('span', {'id': 'fshippingCost'})
         try:
             shipping = shipping.find('span')
@@ -282,7 +297,6 @@ class EbayItem:
 
     def scrape_attributes(self):
         '''Create BeautifulSoup object that is then passed to parsing methods'''
-        # TODO: Implement scrapers:
         print('Scraping in progress...')
         try:
             r = urllib.request.urlopen(self.item_url).read()
