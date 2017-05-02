@@ -55,7 +55,7 @@ class EbayScraper:
             self.db_ids = [str(i) for i in self.db['ebay_id'].tolist()]
 
             for key in self.manual_attributes:
-                self.completion_dict[key] = WordCompleter([str(i) for i in self.db[key].tolist()], ignore_case=True)
+                    self.completion_dict[key] = WordCompleter([str(i) for i in self.db[key].tolist() if str(i) != 'nan'], ignore_case=True)
 
         except FileNotFoundError:
             for key in self.manual_attributes:
@@ -166,6 +166,7 @@ class EbayScraper:
                 print('--------------')
                 self.completion_dict = item.prompt_item_attributes(self.manual_attributes, self.completion_dict)
                 item.scrape_attributes()
+                _ = os.system('clear')
                 self.new_items.append(item)
             except KeyboardInterrupt:
                 print('Ctrl-C Detected...Closing and writing database')
@@ -303,7 +304,8 @@ class EbayItem:
         for attrib, question in manual_attributes.items():
             inp_dict[attrib] = prompt('{}: '.format(question), completer=completion_dict[attrib], complete_while_typing=True)
             if inp_dict[attrib] not in completion_dict[attrib].words:
-                completion_dict[attrib].words.append(inp_dict[attrib])
+                if inp_dict[attrib] != '':
+                    completion_dict[attrib].words.append(inp_dict[attrib])
         answer = confirm('\nAre these details correct? (y/n) ')
         if answer:
             self.set_attributes(inp_dict)
