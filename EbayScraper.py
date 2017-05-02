@@ -5,6 +5,7 @@ TODO:
     Cleanup requirements.txt
     Add proper doc strings
     remove hardcoding url
+    Periodically auto-save db
 '''
 import pandas as pd
 import os
@@ -131,11 +132,6 @@ class EbayScraper:
                 else:
                     self.unfilled_items.append(EbayItem({'ebay_id': listing_id, 'item_url': listing_url}))
 
-    def print_items(self):
-        '''Print ebay items that have had attributes filled in (Stored in EbayScraper.new_items)'''
-        for item in self.new_items:
-            print(item)
-
     def print_manual_attributes(self):
         '''Prints ebay item attributes that need manual input'''
         for attrib, question in self.manual_attributes.items():
@@ -175,8 +171,9 @@ class EbayScraper:
                     driver.get(item.item_url)
                 except selenium.common.exceptions.WebDriverException:  # XXX: BAD FIREFOX, FIX THIS
                     pass
+                current_item_index = self.unfilled_items.index(item) + 1
                 print('--------------')
-                print('({}/{}) - {}'.format(self.unfilled_items.index(item)+1,
+                print('({}/{}) - {}'.format(current_item_index,
                                             len(self.unfilled_items),
                                             item.ebay_id))
                 print('--------------')
@@ -184,6 +181,11 @@ class EbayScraper:
                 item.scrape_attributes()
                 _ = os.system('clear')
                 self.new_items.append(item)
+
+                if current_item_index % 10:
+                    self.write_item_database()
+                    self.new_items = []
+
             except KeyboardInterrupt:
                 print('Ctrl-C Detected...Closing and writing database')
                 try:
@@ -281,10 +283,17 @@ class EbayItem:
 
         if json_data['bin']:
             self.listing_type = 'Buy it now'
-            self.price = json_data['convertedBinPrice']
+            if json_data['convertedBinPrice'] is not None:
+                self.price = json_data['convertedBinPrice']
+            else:
+                self.price = json_data['binPriceDouble']
         elif json_data['bid']:
             self.listing_type = 'Auction'
-            self.price = json_data['convertedBidPrice']
+            if json_data['convertedBidPrice'] is not None:
+                self.price = json_data['convertedBidPrice']
+            else:
+                self.price = json_data['bidPriceDouble']
+
 
         if json_data['won'] or json_data['sold']:
             self.sold = 'True'
