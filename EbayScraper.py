@@ -5,7 +5,6 @@ TODO:
     Cleanup requirements.txt
     Add proper doc strings
     remove hardcoding url
-    Periodically auto-save db
 '''
 import pandas as pd
 import os
@@ -36,6 +35,8 @@ MANUAL_ATTRIBUTES['battery'] = 'Battery Included'
 MANUAL_ATTRIBUTES['ac_charger'] = 'AC Charger Included'
 MANUAL_ATTRIBUTES['dock'] = 'Dock'
 MANUAL_ATTRIBUTES['lot_size'] = 'Lot Size'
+MANUAL_ATTRIBUTES['item_pictured'] = 'Item Pictured'
+MANUAL_ATTRIBUTES['damage'] = 'Visible Wear/Damage'
 
 
 class EbayScraper:
@@ -55,7 +56,7 @@ class EbayScraper:
             self.db_ids = [str(i) for i in self.db['ebay_id'].tolist()]
 
             for key in self.manual_attributes:
-                    self.completion_dict[key] = WordCompleter([str(i) for i in self.db[key].tolist() if str(i) != 'nan'], ignore_case=True)
+                    self.completion_dict[key] = WordCompleter(list(set([str(i) for i in self.db[key].tolist() if str(i) != 'nan'])), ignore_case=True)
 
         except FileNotFoundError:
             for key in self.manual_attributes:
@@ -90,7 +91,7 @@ class EbayScraper:
                     'uction=1&LH_BIN=1&_samilow=&_samihi=&_sadis=15&_stpos=k1r7t8'
                     '&_sargn=-1%26saslc%3D1&_salic=2&_sop=13&_dmd=1&_ipg=200')
         num_search_result_pages = self.get_num_search_result_pages(orig_url)
-        for pg_num in range(num_search_result_pages + 1):  # TODO: determine this num with logic
+        for pg_num in range(num_search_result_pages + 1):
             if pg_num == 1:
                 page = ''
             else:
