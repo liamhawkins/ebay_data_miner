@@ -2,7 +2,6 @@
 *.pyc
 *.swp
 *ipynb*
-*.csv*
 *.log
 test_page_files/
 prompt_examples/
