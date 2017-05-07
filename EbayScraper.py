@@ -188,7 +188,7 @@ class EbayScraper:
                 _ = os.system('clear')
                 self.new_items.append(item)
 
-                if current_item_index % 10:
+                if current_item_index % 5 == 0:
                     self.write_item_database()
                     self.new_items = []
 
