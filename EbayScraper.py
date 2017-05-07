@@ -52,6 +52,7 @@ class EbayScraper:
         # TODO: UPDATE DOC STRING
         self.completion_dict = dict()
         try:
+            print('Reading Database...')
             self.db = pd.read_csv(DATABASE)
             self.db_ids = [str(i) for i in self.db['ebay_id'].tolist()]
 
@@ -65,6 +66,7 @@ class EbayScraper:
 
     def write_item_database(self):
         '''Write EbayScraper.new_items to DATABASE .csv file'''
+        print('Writing Database...')
         items_attribs = list()
         for item in self.new_items:
             items_attribs.append(vars(item))
@@ -76,6 +78,7 @@ class EbayScraper:
             item_df.to_csv(DATABASE)
 
     def get_num_search_result_pages(self, orig_url):
+        print('Getting number of search results...')
         r = urllib.request.urlopen(orig_url).read()
         soup = BeautifulSoup(r, 'html.parser')
         num_results = soup.find('span', class_='rcnt').get_text()
@@ -91,6 +94,7 @@ class EbayScraper:
                     'uction=1&LH_BIN=1&_samilow=&_samihi=&_sadis=15&_stpos=k1r7t8'
                     '&_sargn=-1%26saslc%3D1&_salic=2&_sop=13&_dmd=1&_ipg=200')
         num_search_result_pages = self.get_num_search_result_pages(orig_url)
+        print('Getting search result pages...')
         for pg_num in range(num_search_result_pages + 1):
             if pg_num == 1:
                 page = ''
@@ -114,6 +118,7 @@ class EbayScraper:
         is not already present in DATABASE, and create EbayItem object containing ebay_id and item_url
         for each listing. Then store each EbayItem in EbayScraper.unfilled_items
         '''
+        print('Gathering Listings...')
         for url in self.search_result_page_urls:
             r = urllib.request.urlopen(url).read()
             soup = BeautifulSoup(r, 'html.parser')
