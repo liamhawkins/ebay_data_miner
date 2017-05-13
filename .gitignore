@@ -3,5 +3,6 @@
 *.swp
 *ipynb*
 *.log
+*.csv
 test_page_files/
 prompt_examples/
